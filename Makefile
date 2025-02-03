@@ -27,5 +27,8 @@ $(OBJ): $(SRC)
 clean:
 	rm -rf $(BUILD_DIR)
 
+# make docs
+doc:
+	doxygen
 # Declare phony targets
 .PHONY: all clean
