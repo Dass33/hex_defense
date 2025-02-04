@@ -1,27 +1,27 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -pedantic -std=c++20 -O2
+CXXFLAGS = -Wall -Wextra -pedantic -std=c++20 -O2 -g
 
 # Directories
 SRC_DIR = src
 BUILD_DIR = build
 
 # Files
-SRC = $(SRC_DIR)/main.cpp
-OBJ = $(BUILD_DIR)/main.o
+SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 TARGET = hex
 
 # Default target
 all: $(TARGET)
 
 # Link object files to create the executable
-$(TARGET): $(OBJ)
-	$(CXX) $(OBJ) -o $(TARGET) -lncurses
+$(TARGET): $(OBJS)
+	$(CXX) $(OBJS) -o $(TARGET) -lncurses
 
-# Compile source files into object files (corrected with -c)
-$(OBJ): $(SRC)
+# Compile source files into object files (using patterns)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $(SRC) -o $(OBJ)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean build files
 clean:
@@ -31,4 +31,4 @@ clean:
 doc:
 	doxygen
 # Declare phony targets
-.PHONY: all clean
+.PHONY: all clean doc
