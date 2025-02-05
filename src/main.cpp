@@ -1,7 +1,6 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdio>
-#include <filesystem>
 #include <fstream>
 #include <ncurses.h>
 #include <ostream>
@@ -119,19 +118,23 @@ void Level::edit_level() {
         mvwprintw(level_editor,y,x, "%c", at(x,y));
 
         switch (c) {
-            case KEY_UP: case 'k':
+            case KEY_UP:
+            //case 'k':
                 y--;
                 if (y < 1) y = winHeight -2;
             break;
-            case KEY_DOWN: case 'j':
+            case KEY_DOWN:
+            //case 'j':
                 y++;
                 if (y > winHeight -2) y = 1;
             break;
-            case KEY_RIGHT: case 'l':
+            case KEY_RIGHT:
+            //case 'l':
                 x++;
                 if (x > winWidth -2) x = 1;
             break;
-            case KEY_LEFT: case 'h':
+            case KEY_LEFT:
+            //case 'h':
                 x--;
                 if (x < 1) x = winWidth -2;
             break;
