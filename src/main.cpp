@@ -37,7 +37,7 @@ Level::Level() {
     getmaxyx(stdscr, yMax, xMax);
     winHeight = yMax / (3.0/2);
     winWidth = xMax / (3.0/2);
-    tiles.resize((winWidth-2) * (winHeight-2), ' ');
+    tiles.resize((winWidth-1) * (winHeight-1), ' ');
 }
 
 void Level::insert(const int x, const int y, const int val) {
@@ -147,7 +147,7 @@ void Level::edit_level() {
 
         prev_c = c;
         mvprintw(yMax-1,1,"Last input: %c ", c);
-        mvprintw(yMax-2,1,"at(x,y) = %c", at(x,y));
+        mvprintw(yMax-2,1,"at(x,y) = '%c'", at(x,y));
         mvprintw(yMax-3,1,"print char: %c ", print_char);
         refresh();
     } while (c != 'q');
