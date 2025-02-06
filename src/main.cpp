@@ -68,14 +68,8 @@ int main() {
 
         if (prev_input == ':' && input == 'q') break;
 
-        if (input == 'e') level_menu(menu);
-        else if (input == 'p') {
-            wclear(menu);
-            mvwprintw(menu, 1, 1, "You choose to play.");
-            wgetch(menu);
-            wclear(menu);
-            wrefresh(menu);
-        }
+        if (input == 'e') level_edit_menu(menu);
+        else if (input == 'p') level_play_menu(menu);
         prev_input = input;
     }
 

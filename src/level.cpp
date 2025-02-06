@@ -1,11 +1,12 @@
 #include "../libs/level.h"
-#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <ncurses.h>
 #include <string>
 #include <fstream>
-#include <cstddef>
 #include <vector>
+#include <unistd.h> 
 
 
 Level::Level() {
@@ -45,6 +46,72 @@ void Level::print_level(WINDOW *win) const{
     }
 }
 
+void Level::get_coordinates(const size_t index, Coordinates& pos) const {
+    pos.x = index % (winWidth-2) + 1;
+    pos.y = index / (winWidth-2) + 1;
+}
+
+size_t Level::find_next_tile(const char key, Coordinates& pos, Coordinates& prev_pos) {
+    size_t res = 0;
+    const size_t max_cord_x = winWidth-2;
+    const size_t max_cord_y = winHeight-2;
+    Coordinates tmp_pos(pos);
+
+    const std::vector<std::pair<int, int>> directions =
+        {{1,0},{-1,0},{0,1},{0,-1}};
+
+    for (const auto& [dx, dy] : directions) {
+        Coordinates new_pos = {pos.x + dx, pos.y + dy};
+
+        if (new_pos.x < 1 || new_pos.x > max_cord_x
+         || new_pos.y < 1 || new_pos.y > max_cord_y) continue;
+
+        if (at(new_pos.x, new_pos.y) == key &&
+            (new_pos.x != prev_pos.x || new_pos.y != prev_pos.y)) {
+            res++;
+            tmp_pos.x += dx;
+            tmp_pos.y += dy;
+        }
+    }
+    road.push_back(pos);
+    prev_pos = pos;
+    pos = tmp_pos;
+    return res;
+}
+
+bool Level::build_path() {
+    Coordinates curr_pos(road_start);
+    Coordinates prev_pos(SIZE_MAX, SIZE_MAX);
+
+    size_t ends_found = 0;
+    for (;;) {
+        size_t paths_found = find_next_tile('.', curr_pos, prev_pos);
+        if (!paths_found) ends_found += find_next_tile('#', curr_pos, prev_pos);
+        if (ends_found == 1 && !paths_found) return true;
+        if (paths_found != 1 || ends_found > 1) return false;
+    }
+    return false;
+}
+
+bool Level::build_level() {
+    if (START_CHAR == END_CHAR) return false;
+
+    size_t start_char_count = 0, end_char_count = 0;
+
+    for (size_t i = 0; i < tiles.size(); i++) {
+        if (tiles[i] == START_CHAR) {
+            start_char_count++;
+            get_coordinates(i, road_start);
+        }
+        else if (tiles[i] == END_CHAR) {
+            end_char_count++;
+            get_coordinates(i, road_end);
+        }
+    }
+    if (start_char_count != 1 || end_char_count != 1) return false;
+
+    return build_path();
+}
 
 void get_level(Level &level, std::string level_path) {
     try {
@@ -141,8 +208,8 @@ void Level::edit_level() {
         mvprintw(yMax-4,1,"pos %ld ", (y-1) * (winWidth-2) + (x-1));
         refresh();
     } while (c != 'q');
-    //wclear(level_editor);
-
+    wclear(level_editor);
+    wrefresh(level_editor);
 }
 
 bool level_fits_on_screen(int index){
@@ -161,19 +228,16 @@ bool level_fits_on_screen(int index){
     return true;
 }
 
-void level_menu(WINDOW* menu) {
+void level_edit_menu(WINDOW* menu) {
     int yMax, xMax;
     getmaxyx(stdscr, yMax, xMax);
 
     wclear(menu);
     box(menu, 0, 0);
-    // e is button used to get to level menu
+    // e is button used to get to level edit menu
     int input = 'e';
 
     mvwprintw(menu,0,2,"Level Edit Menu");
-
-    std::array<bool, MAX_LEVEL + 1>can_open{};
-    can_open.fill(true);
 
     init_pair(1, COLOR_RED, COLOR_BLACK);
 
@@ -197,19 +261,95 @@ void level_menu(WINDOW* menu) {
         mvprintw(yMax-1,1,"Last input: %c ", input);
         input = wgetch(menu);
         if (input == 'q') return;
-        //if (!level_fits_on_screen(input - '0')) continue;
+        if (!level_fits_on_screen(input - '0')) continue;
         if (input - '0' <= MAX_LEVEL && input - '0' >= 0) break;
     }
 
     //mvwprintw(menu,1,3,"Level choses: %d", input);
 
 
-    std::string level_path = LEVEL_PATH + std::to_string(input - '0');
+    std::string level_path = LEVEL_PATH + std::string(1, input);
     clear();
 
     Level level;
     get_level(level, level_path);
     level.edit_level();
     level.save_level(level_path);
+    wclear(menu);
+}
+
+void Level::play_level() const{
+    int win_y_start = (yMax-winHeight)/2;
+    int win_x_start = (xMax-winWidth)/2;
+    WINDOW *play_win = newwin(winHeight, winWidth, win_y_start, win_x_start);
+
+    print_level(play_win);
+    wrefresh(play_win);
+
+    for (size_t i = 1; i < road.size(); i++) {
+        mvwprintw(play_win, road[i].y, road[i].x, "1");
+        mvwprintw(play_win, road[i-1].y, road[i-1].x, ".");
+        wrefresh(play_win);
+        usleep(100000);
+    }
+
+    //wgetch(play_win);
+    wclear(play_win);
+    wrefresh(play_win);
+}
+
+void level_play_menu(WINDOW* menu) {
+    int yMax, xMax;
+    getmaxyx(stdscr, yMax, xMax);
+
+    wclear(menu);
+    box(menu, 0, 0);
+    // p is button used to get to play menu
+    int input = 'p';
+
+    mvwprintw(menu,0,2,"Level Play Menu");
+
+    init_pair(1, COLOR_RED, COLOR_BLACK);
+
+
+    size_t levels_exist = 0;
+    for (int i = 0; i <= MAX_LEVEL;i++) {
+        bool fits_screen = true;
+        if (!std::filesystem::exists(LEVEL_PATH + std::to_string(i))) continue;
+        if (!level_fits_on_screen(input - '0')) continue;
+        wattron(menu, A_REVERSE);
+        fits_screen = level_fits_on_screen(i);
+
+        if (!fits_screen) wattron(menu, COLOR_PAIR(1));
+        mvwprintw(menu,++levels_exist+1,2,"Level%d", i);
+        wattroff(menu, A_REVERSE | COLOR_PAIR(1));
+        if (!fits_screen) wprintw(menu," //too small terminal");
+    }
+
+    mvwprintw(menu,levels_exist + 3,2,"Choose level to play by pressing '0-%d'", MAX_LEVEL);
+    mvwprintw(menu,levels_exist + 4,2,"Or press q to go back to main menu.");
+
+    for(;;) {
+        mvprintw(yMax-1,1,"Last input: %c ", input);
+        input = wgetch(menu);
+        if (input == 'q') return;
+        // put this if back in!!!
+        //if (!level_fits_on_screen(input - '0')) continue;
+        if (input - '0' <= MAX_LEVEL && input - '0' >= 0) break;
+    }
+
+    std::string level_path = LEVEL_PATH + std::string(1, input);
+    clear();
+
+    Level level;
+    get_level(level, level_path);
+
+    yMax = getmaxy(menu);
+    if (!level.build_level()) {
+        wattron(menu, COLOR_PAIR(1));
+        mvwprintw(menu, yMax -1, 1, "Can't build level.");
+        wattroff(menu, COLOR_PAIR(1));
+        wgetch(menu);
+    } else level.play_level();
     wclear(menu);
 }
