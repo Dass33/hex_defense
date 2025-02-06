@@ -38,6 +38,7 @@ int main() {
     noecho();
     cbreak();
     curs_set(0);
+    start_color();
 
     int yMax, xMax;
     getmaxyx(stdscr, yMax, xMax);
@@ -53,12 +54,13 @@ int main() {
     display_title(yMax/2-6, xMax/2-27);
     getchar();
 
-    WINDOW *menu = newwin(yMax /2, xMax/2, yMax /4, xMax /4);
     
     int input = ' ';
     int prev_input = ' ';
 
     for (;;) {
+        getmaxyx(stdscr, yMax, xMax);
+        WINDOW *menu = newwin(yMax /2, xMax/2, yMax /4, xMax /4);
         display_menu(menu);
         input = wgetch(menu);
         mvprintw(yMax-1,1,"Last input: %c ", input);

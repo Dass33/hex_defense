@@ -1,4 +1,7 @@
 #include "../libs/level.h"
+#include <array>
+#include <filesystem>
+#include <ncurses.h>
 #include <string>
 #include <fstream>
 #include <cstddef>
@@ -31,7 +34,6 @@ void Level::save_level(std::string& level_path) const{
 }
 
 void Level::print_level(WINDOW *win) const{
-    //todo improve printing
     box(win,0,0);
 
     int e = 1;
@@ -41,12 +43,6 @@ void Level::print_level(WINDOW *win) const{
         }
         wprintw(win, "%c", tiles[i]);
     }
-}
-
-bool is_valid_level(Level& level) {
-    //todo
-    //if (!isprint(level.at(0,0))) return false;
-    return true;
 }
 
 
@@ -73,16 +69,15 @@ void get_level(Level &level, std::string level_path) {
         level.winWidth = winWidth;
         level.tiles = std::move(tmp_vec);
 
-        getmaxyx(stdscr, level.yMax, level.xMax);
-        level.winHeight = level.yMax / (3.0/2);
-        level.winWidth = level.xMax / (3.0/2);
     } catch(const std::exception& e) {
         mvprintw(0,1,"%s", e.what());
     }
 }
 
 void Level::edit_level() {
-    WINDOW *level_editor = newwin(winHeight, winWidth, yMax/6,xMax/6);
+    int win_y_start = (yMax-winHeight)/2;
+    int win_x_start = (xMax-winWidth)/2;
+    WINDOW *level_editor = newwin(winHeight, winWidth, win_y_start, win_x_start);
 
     print_level(level_editor);
     //box(level_editor, 0, 0);
@@ -150,36 +145,63 @@ void Level::edit_level() {
 
 }
 
-//todo open level with right size
-//or forbid opening it
+bool level_fits_on_screen(int index){
+    std::string path = LEVEL_PATH + std::to_string(index);
+    double yMax, xMax;
+    getmaxyx(stdscr, yMax, xMax);
+    std::ifstream ifs(path);
+
+    size_t winHeight, winWidth;
+    // if the size can't be read, returns true
+    if (!(ifs >> winHeight >> winWidth)) return true;
+    ifs.close();
+    if (winHeight + LEVEL_HEIGHT_PADDING > yMax) return false;
+    if (winWidth + LEVEL_WIDTH_PADDING > xMax) return false;
+
+    return true;
+}
+
 void level_menu(WINDOW* menu) {
     int yMax, xMax;
     getmaxyx(stdscr, yMax, xMax);
 
     wclear(menu);
     box(menu, 0, 0);
+    // e is button used to get to level menu
     int input = 'e';
 
+    mvwprintw(menu,0,2,"Level Edit Menu");
 
-    wmove(menu, 3,2);
-    wprintw(menu,"Level choses: ");
-    wattron(menu, A_REVERSE);
-    wprintw(menu, " ");
-    wattroff(menu, A_REVERSE);
+    std::array<bool, MAX_LEVEL + 1>can_open{};
+    can_open.fill(true);
 
-    do {
+    init_pair(1, COLOR_RED, COLOR_BLACK);
+
+    for (int i = 0; i <= MAX_LEVEL;i++) {
+        bool fits_screen = true;
+        if (std::filesystem::exists(LEVEL_PATH + std::to_string(i))) {
+            wattron(menu, A_REVERSE);
+            fits_screen = level_fits_on_screen(i);
+
+            if (!fits_screen) wattron(menu, COLOR_PAIR(1));
+        }
+        mvwprintw(menu,i+2,2,"Level%d", i);
+        wattroff(menu, A_REVERSE | COLOR_PAIR(1));
+        if (!fits_screen) wprintw(menu," //too small terminal");
+    }
+    mvwprintw(menu,MAX_LEVEL + 4,2,"Choose level to edit by pressing '0-%d'", MAX_LEVEL);
+    mvwprintw(menu,MAX_LEVEL + 5,2,"Highlited levels already exist.");
+    mvwprintw(menu,MAX_LEVEL + 7,2,"Or press q to go back to main menu.");
+
+    for(;;) {
         mvprintw(yMax-1,1,"Last input: %c ", input);
-
-        mvwprintw(menu,0,2,"Level Edit Menu");
-        mvwprintw(menu,2,2,"Choose level to edit by pressing '0-%d'", MAX_LEVEL);
-        mvwprintw(menu,3,2,"Then choose level width '%d-%d", MIN_LEVEL_WIDTH, MAX_LEVEL_WIDTH);
-        mvwprintw(menu,4,2,"And level height '%d-%d", MIN_LEVEL_HEIGHT, MAX_LEVEL_HEIGHT);
-        mvwprintw(menu,5,2,"Or press q to go back to main menu.");
-
         input = wgetch(menu);
         if (input == 'q') return;
-    } while (input - '0' > MAX_LEVEL  || input - '0' < 0);
-    mvwprintw(menu,1,3,"Level choses: %d", input);
+        //if (!level_fits_on_screen(input - '0')) continue;
+        if (input - '0' <= MAX_LEVEL && input - '0' >= 0) break;
+    }
+
+    //mvwprintw(menu,1,3,"Level choses: %d", input);
 
 
     std::string level_path = LEVEL_PATH + std::to_string(input - '0');
