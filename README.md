@@ -5,10 +5,14 @@ Your goal in this game is to survive the swarm of hex characters, crawling to yo
 The hex characters are actually a mallicious packets that try to break into your computer.
 Throughout the game you devise a plan to stop the attacker and even get your **revenge**.
 
+# Dependency
+
+Only dependency for this project is libncurses-dev.
 
 # Sources
 
 **Ncurses tutorial series**:
 https://www.youtube.com/watch?v=A5lX1h_2zy0&list=PL2U2TQ__OrQ8jTf0_noNKtHMuYlyxQl4v&index=2
+
 **ASCII title**:
 http://patorjk.com/software/taag/#p=display&f=Doom&t=Hex%20defense
