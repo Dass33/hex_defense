@@ -27,6 +27,10 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 clean:
 	rm -rf $(BUILD_DIR)
 
+# Run the binary
+run:
+	./$(TARGET)
+
 # make docs
 doc:
 	doxygen
