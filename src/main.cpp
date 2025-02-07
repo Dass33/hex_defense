@@ -8,7 +8,14 @@
 //static constexpr int Y_MIN_SCREEN = 30,X_MIN_SCREEN = 90;
 static constexpr int Y_MIN_SCREEN = 24,X_MIN_SCREEN = 80;
 
-
+/**
+ * @brief Displays the main menu within the provided window.
+ *
+ * This function clears the given ncurses window, draws a border around it, 
+ * and prints the main menu options: play, edit levels, or exit the application.
+ *
+ * @param menu Pointer to the ncurses WINDOW where the menu will be rendered.
+ */
 void display_menu(WINDOW* menu) {
     wclear(menu);
     box(menu, 0, 0);
@@ -20,6 +27,15 @@ void display_menu(WINDOW* menu) {
     mvwprintw(menu,7,2,"Levels have different min terminal sizes.");
 }
 
+/**
+ * @brief Displays the title screen at a specified position.
+ *
+ * This function prints a stylized title and blinking prompt to contine
+ * in the standard screen, using the given starting coordinate.
+ *
+ * @param yStart The starting y-coordinate (row) for the title display.
+ * @param xStart The starting x-coordinate (column) for the title display.
+ */
 void display_title(int yStart, int xStart) {
     mvprintw(yStart, xStart, "%s", " _   _                 _       __                    ");
     mvprintw(yStart+1, xStart, "%s", "| | | |               | |     / _|                   ");
@@ -33,6 +49,16 @@ void display_title(int yStart, int xStart) {
     refresh();
 }
 
+/**
+ * @brief Entry point to the game.
+ *
+ * This function initializes ncurses, configures its settings, 
+ * and checks that the current terminal size meets the minimum requirements. It displays 
+ * title and then displays the main menu, waits for user input, and selects appropriate
+ * sub-menu (playing or editing). Exits ':q' as an input.
+ *
+ * @return int Returns 0 if succesful, or 1 if errors arised.
+ */
 int main() {
     initscr();
     noecho();
