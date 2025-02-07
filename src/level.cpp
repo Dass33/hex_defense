@@ -1,4 +1,5 @@
 #include "../libs/level.h"
+#include "../libs/game_state.h"
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -7,7 +8,10 @@
 #include <fstream>
 #include <vector>
 #include <unistd.h> 
-
+/**
+ * @file level.cpp
+ * @brief Implementation of level management and editing functionality for a game
+ */
 
 Level::Level() {
     getmaxyx(stdscr, yMax, xMax);
@@ -228,6 +232,8 @@ bool level_fits_on_screen(int index){
     return true;
 }
 
+//-------------------------------------------------------------------------------
+
 void level_edit_menu(WINDOW* menu) {
     int yMax, xMax;
     getmaxyx(stdscr, yMax, xMax);
@@ -278,25 +284,6 @@ void level_edit_menu(WINDOW* menu) {
     wclear(menu);
 }
 
-void Level::play_level() const{
-    int win_y_start = (yMax-winHeight)/2;
-    int win_x_start = (xMax-winWidth)/2;
-    WINDOW *play_win = newwin(winHeight, winWidth, win_y_start, win_x_start);
-
-    print_level(play_win);
-    wrefresh(play_win);
-
-    for (size_t i = 1; i < road.size(); i++) {
-        mvwprintw(play_win, road[i].y, road[i].x, "1");
-        mvwprintw(play_win, road[i-1].y, road[i-1].x, ".");
-        wrefresh(play_win);
-        usleep(100000);
-    }
-
-    //wgetch(play_win);
-    wclear(play_win);
-    wrefresh(play_win);
-}
 
 void level_play_menu(WINDOW* menu) {
     int yMax, xMax;
@@ -350,6 +337,10 @@ void level_play_menu(WINDOW* menu) {
         mvwprintw(menu, yMax -1, 1, "Can't build level.");
         wattroff(menu, COLOR_PAIR(1));
         wgetch(menu);
-    } else level.play_level();
+        level_play_menu(menu);
+    } else {
+        if (!select_game_mode(menu, level))
+            level_play_menu(menu);
+    }
     wclear(menu);
 }
