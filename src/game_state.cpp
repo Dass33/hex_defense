@@ -1,9 +1,16 @@
 #include "../libs/game_state.h"
 #include "../libs/level.h"
+#include "../libs/coordinates.h"
+#include <cctype>
+#include <cstddef>
+#include <cstdio>
+#include <fstream>
+#include <ncurses.h>
+#include <vector>
 
 bool select_game_mode(WINDOW* menu, Level& level) {
     int yMax, xMax;
-    getmaxyx(stdscr, yMax, xMax);
+    getmaxyx(menu, yMax, xMax);
 
     wclear(menu);
     box(menu, 0, 0);
@@ -28,8 +35,62 @@ bool select_game_mode(WINDOW* menu, Level& level) {
 
     int difficulty = input - '0';
     Game_state init_game_state(difficulty);
+    if (!init_game_state.validate_rounds()) {
+        wattron(menu, COLOR_PAIR(1));
+        mvwprintw(menu, yMax -1, 1, "Not enough valid rounds.");
+        wattroff(menu, COLOR_PAIR(1));
+        wrefresh(menu);
+        wgetch(menu);
+        return false;
+    }
     game_loop(level, init_game_state);
     return true;
+}
+
+size_t to_hex(char c) {
+    if (isdigit(c)) return c - '0';
+    if (c < 'A' || c > 'F') return 0;
+    return c - 'A' + 10;
+}
+
+void Game_state::load_next_round(std::ifstream& ifs) {
+    char enemy = ifs.get();
+    size_t count;
+    const int dir = 1;
+    while (enemy != '*') {
+        const size_t hp = to_hex(enemy);
+        for (int i = 0; i < count; i++) {
+            enemies.vec.emplace_back(hp, dir);
+        }
+    }
+}
+
+bool Game_state::validate_rounds() const {
+    std::ifstream ifs(ROUNDS_PATH);
+    char enemy;
+    size_t count;
+    for (size_t i = 0; i < rounds_count; i++) {
+        for (;;) {
+            if (!(ifs >> enemy)) return false;
+            if (enemy == '*') break;
+            if (!(ifs >> count)) return false;
+            if (!isdigit(enemy) && enemy < 'A' && enemy > 'F')
+                return false;
+        }
+    }
+    ifs.close();
+    return true;
+}
+
+void Game_state::print_road(WINDOW* win, std::vector<Coordinates> road) const {
+    for (size_t i = 0; i < road.size(); i++) {
+        if (i < enemies.vec.size() && enemies.vec[i].get_char() != 0) {
+            mvwprintw(win, road[i].y, road[i].x, "%c", enemies.vec[i].get_char());
+        }
+        if (i < alies.vec.size() && alies.vec[i].get_char() != 0) {
+            mvwprintw(win, road[i].y, road[i].x, "%c", alies.vec[i].get_char());
+        }
+    }
 }
 
 Game_state::Game_state(int difficulty, int game_mode)
