@@ -98,8 +98,26 @@ void Game_state::print_road(WINDOW* win, std::vector<Coordinates> road) const {
     }
 }
 
+bool Game_state::turret_collides(Coordinates& pos) {
+    for (auto& turret : turrets) {
+        if (turret->get_pos().y == pos.y &&
+            (turret->get_pos().x == pos.x
+            || turret->get_pos().x == pos.x -1
+            || turret->get_pos().x == pos.x +1))
+            return true;
+    }
+    return false;
+}
+
 Game_state::Game_state(int difficulty, int game_mode)
     :difficulty(difficulty), game_mode(game_mode) {
     curr_hp = BASE_HEALTH / difficulty;
     rounds_count = BASE_ROUNDS * difficulty * difficulty;
+    money = STARTING_MONEY / difficulty;
+}
+
+Game_state::~Game_state() {
+    for (auto* turret: turrets) {
+        delete turret;
+    }
 }

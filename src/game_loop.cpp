@@ -1,6 +1,7 @@
 #include "../libs/level.h"
 #include "../libs/game_state.h"
 #include "../libs/moving_objects.h"
+#include "../libs/turrets.h"
 #include <chrono>
 #include <cstddef>
 #include <fstream>
@@ -18,8 +19,11 @@ struct Player_state {
     attr_t attributes;
 };
 
-void player_actions(Coordinates& pos, WINDOW* win, Level& level, Player_state& player) {
+void player_actions(Coordinates& pos, WINDOW* win, Level& level,
+                    Player_state& player, Game_state& game_state) {
     int input = wgetch(win);
+    const int towers_size = sizeof TOWERS_ICONS[0] / sizeof(char) -1;
+
     switch (input) {
         case ERR: return;
         case KEY_UP:
@@ -61,16 +65,42 @@ void player_actions(Coordinates& pos, WINDOW* win, Level& level, Player_state& p
         break;
         //> 10 == KEY_ENTER
         case 10:
+            if (!level.clear_n_tiles(pos, towers_size)
+                || game_state.turret_collides(pos)) break;
             switch (player.mode) {
                 case basic: break;
-                case anti_hex: break;
-                case fire_wall: break;
-                case blue_teamer: break;
+                case anti_hex:
+                    if (game_state.money < ANTI_HEX_COST) {
+                        //todo
+                    } else {
+                        Turrets* anti_hex = new Anti_hex(pos);
+                        game_state.turrets.push_back(anti_hex);
+                        game_state.money -= ANTI_HEX_COST;
+                    }
+                    break;
+                case fire_wall:
+                    if (game_state.money < FIRE_WALL_COST) {
+                        //todo
+                    } else {
+                        Turrets* fire_wall = new FireWall(pos);
+                        game_state.turrets.push_back(fire_wall);
+                        game_state.money -= FIRE_WALL_COST;
+                    }
+                    break;
+                case blue_teamer:
+                    if (game_state.money < BLUE_TEAMER_COST) {
+                        //todo
+                    } else {
+                        Turrets* blue_teamer = new Blue_teamer(pos);
+                        game_state.turrets.push_back(blue_teamer);
+                        game_state.money -= BLUE_TEAMER_COST;
+                    }
+                    break;
             }
         default: break;
     }
-    const int towers_size = sizeof TOWERS_ICONS[0] / sizeof(char) -1;
-    if (player.mode != basic && !level.clear_n_tiles(pos, towers_size)) {
+    if (player.mode != basic && (!level.clear_n_tiles(pos, towers_size)
+        || game_state.turret_collides(pos))) {
         player.attributes = COLOR_PAIR(1);
     } else player.attributes = 0;
 }
@@ -87,11 +117,16 @@ void round_loop(WINDOW* play_win,Level& level, Game_state& game_state, Coordinat
     auto last_enemy_move = std::chrono::steady_clock::now();
     std::chrono::duration<double>enemy_interval(0.1);
     while (game_state.enemies.enemies_left) {
-        player_actions(pos, play_win, level, player);
+        player_actions(pos, play_win, level, player, game_state);
         level.print_level(play_win);
         mvprintw(1, 0, "Enemies left: %02ld", game_state.enemies.enemies_left);
         mvprintw(2, 0, "hp: %03ld", game_state.curr_hp);
-        
+        mvprintw(3, 0, "$ %5ld ", game_state.money);
+
+        for (auto& turret : game_state.turrets) {
+            turret->print(play_win);
+            turret->attack();
+        }
 
         auto now = std::chrono::steady_clock::now();
         if (now -last_enemy_move > enemy_interval) {
