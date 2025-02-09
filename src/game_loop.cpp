@@ -5,42 +5,89 @@
 #include <cstddef>
 #include <fstream>
 #include <ncurses.h>
+#include <string>
 #include <thread>
 //#include <chrono>
 
 #define curr_round game_state.curr_round
 #define rounds_count game_state.rounds_count
 
+struct Player_state {
+    std::string icon;
+    Player_modes mode;
+    attr_t attributes;
+};
+
+void player_actions(Coordinates& pos, WINDOW* win, Level& level, Player_state& player) {
+    int input = wgetch(win);
+    switch (input) {
+        case ERR: return;
+        case KEY_UP:
+            pos.y--;
+            if (pos.y < 1) pos.y = level.winHeight -2;
+        break;
+        case KEY_DOWN:
+            pos.y++;
+            if (pos.y > level.winHeight -2) pos.y = 1;
+        break;
+        case KEY_RIGHT:
+            pos.x++;
+            if (pos.x > level.winWidth -2) pos.x = 1;
+            else if (player.mode != basic && pos.x > level.winWidth -4)
+                pos.x = 1;
+        break;
+        case KEY_LEFT:
+            pos.x--;
+            if (pos.x < 1) {
+                if (player.mode != basic) pos.x = level.winWidth -4;
+                else pos.x = level.winWidth -2;
+            }
+        break;
+        case 'h':
+            player.icon.assign(PLAYER_ICON);
+            player.mode = basic;
+            break;
+        case 'j':
+            player.icon.assign(TOWERS_ICONS[0]);
+            player.mode = anti_hex;
+        break;
+        case 'k':
+            player.icon.assign(TOWERS_ICONS[1]);
+            player.mode = fire_wall;
+        break;
+        case 'l':
+            player.icon.assign(TOWERS_ICONS[2]);
+            player.mode = blue_teamer;
+        break;
+        //> 10 == KEY_ENTER
+        case 10:
+            switch (player.mode) {
+                case basic: break;
+                case anti_hex: break;
+                case fire_wall: break;
+                case blue_teamer: break;
+            }
+        default: break;
+    }
+    const int towers_size = sizeof TOWERS_ICONS[0] / sizeof(char) -1;
+    if (player.mode != basic && !level.clear_n_tiles(pos, towers_size)) {
+        player.attributes = COLOR_PAIR(1);
+    } else player.attributes = 0;
+}
+
 void round_loop(WINDOW* play_win,Level& level, Game_state& game_state, Coordinates& pos) {
     nodelay(play_win, true);
     size_t max_enemies = game_state.enemies.vec.size();
     size_t curr_enemies = 0;
+    Player_state player;
+    player.mode = basic;
+    player.attributes = 0;
+    player.icon = PLAYER_ICON;
 
     auto last_enemy_move = std::chrono::steady_clock::now();
     std::chrono::duration<double>enemy_interval(0.1);
     while (game_state.enemies.enemies_left) {
-        int input = wgetch(play_win);
-        switch (input) {
-            case ERR:
-            break;
-            case KEY_UP:
-                pos.y--;
-                if (pos.y < 1) pos.y = level.winHeight -2;
-            break;
-            case KEY_DOWN:
-                pos.y++;
-                if (pos.y > level.winHeight -2) pos.y = 1;
-            break;
-            case KEY_RIGHT:
-                pos.x++;
-                if (pos.x > level.winWidth -2) pos.x = 1;
-            break;
-            case KEY_LEFT:
-                pos.x--;
-                if (pos.x < 1) pos.x = level.winWidth -2;
-            break;
-            default: break;
-        }
+        player_actions(pos, play_win, level, player);
         level.print_level(play_win);
         mvprintw(1, 0, "Enemies left: %02ld", game_state.enemies.enemies_left);
         mvprintw(2, 0, "hp: %03ld", game_state.curr_hp);
@@ -53,10 +100,13 @@ void round_loop(WINDOW* play_win,Level& level, Game_state& game_state, Coordinat
             game_state.curr_hp -= game_state.enemies.update(curr_enemies, level.road.size() -1);
         }
         game_state.print_road(play_win, level.road);
-        mvwprintw(play_win, pos.y, pos.x, "@");
+        wattron(play_win, player.attributes);
+        mvwprintw(play_win, pos.y, pos.x, "%s", player.icon.c_str());
+        wattroff(play_win, player.attributes);
 
         refresh();
         wrefresh(play_win);
+        //> Sleep for 10 milliseconds to reduce the load on CPU
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     nodelay(play_win, false);
@@ -72,7 +122,7 @@ void game_loop(Level& level, Game_state& game_state) {
     Coordinates pos(1,1);
 
     level.print_level(play_win);
-    mvwprintw(play_win,1,1,"@");
+    mvwprintw(play_win,1,1, PLAYER_ICON);
     wrefresh(play_win);
 
     std::ifstream rounds_file(ROUNDS_PATH);

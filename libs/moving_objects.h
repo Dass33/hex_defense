@@ -9,7 +9,6 @@ public:
     Moving_object(size_t hp, size_t road_index = 0)
         : hp(hp), road_index(road_index){}
     void combine(Moving_object obj);
-    void apply_damadge();
     char get_char() const;
     size_t hp;
     size_t road_index;

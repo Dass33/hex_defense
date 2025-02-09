@@ -11,7 +11,6 @@ static constexpr size_t BASE_ROUNDS = 5;
 constexpr char DIFFICULTIES[][10] = {"Easy","Medium","Hard"};
 constexpr char ROUNDS_PATH[] = "./assets/rounds";
 
-
 class Level;
 
 class Game_state {

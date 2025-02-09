@@ -14,8 +14,12 @@ constexpr int MIN_LEVEL_WIDTH = 60, MIN_LEVEL_HEIGHT = 16;
 constexpr size_t LEVEL_HEIGHT_PADDING = 2, LEVEL_WIDTH_PADDING = 2;
 // Start and End chars have to differ
 constexpr char START_CHAR = '*', END_CHAR = '#';
+constexpr char PLAYER_ICON[] = "@";
+enum Player_modes { basic, blue_teamer, fire_wall, anti_hex};
+constexpr char TOWERS_ICONS[][4] = {"!0x","/^\\",">@<"};
 
 class Game_state;
+struct Player_state;
 
 /**
  * @class Level
@@ -45,8 +49,9 @@ public:
      * @param x X-coordinate to retrieve
      * @param y Y-coordinate to retrieve
      * @return char Character at the specified location
+     * or -1 if position is out of bounds
      */
-    [[nodiscard]] char at(int x, int y) const;
+    [[nodiscard]] char at(size_t x, size_t y) const;
 
     /**
      * @brief Build and validate the entire level
@@ -81,6 +86,15 @@ public:
     bool build_level();
 
     /**
+     * @brief Checks todo
+     * 
+     * Checks for start and end points, ensures a valid path exists
+     * 
+     * @return bool True if level is valid, false otherwise
+     */
+    bool clear_n_tiles(Coordinates const pos, size_t width) const;
+
+    /**
      * @brief Load a level from a file
      * 
      * @param level Level object to populate
@@ -89,6 +103,7 @@ public:
     friend void get_level(Level &level, std::string level_path);
     friend void game_loop(Level& level, Game_state& init_game_state);
     friend void round_loop( WINDOW* play_win,Level& level, Game_state& game_state, Coordinates& pos);
+    friend void player_actions(Coordinates& pos, WINDOW* win, Level& level, Player_state& player);
 private:
     std::vector<char> tiles; ///< 2D grid of level tiles represented as a 1D vector
     size_t yMax, xMax;  ///< Maximum coordinates of the screen

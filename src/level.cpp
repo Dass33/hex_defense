@@ -25,7 +25,9 @@ void Level::insert(const int x, const int y, const int val) {
     tiles[(y-1) * (winWidth-2) + (x-1)] = val;
 }
  
-char Level::at(const int x, const int y) const {
+char Level::at(const size_t x, const size_t y) const {
+    if (x > winWidth || y > winHeight) return -1;
+    if (x < 1 || y < 1) return -1;
     return tiles[(y-1) * (winWidth-2) + (x-1)];
 }
 
@@ -115,6 +117,13 @@ bool Level::build_level() {
     if (start_char_count != 1 || end_char_count != 1) return false;
 
     return build_path();
+}
+
+bool Level::clear_n_tiles(Coordinates const pos, size_t width) const {
+        for (size_t i = 0; i < width; i++) {
+            if (at(pos.x + i, pos.y) != ' ') return false;
+        }
+    return true;
 }
 
 void get_level(Level &level, std::string level_path) {
