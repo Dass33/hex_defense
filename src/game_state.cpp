@@ -47,21 +47,25 @@ bool select_game_mode(WINDOW* menu, Level& level) {
     return true;
 }
 
-size_t to_hex(char c) {
+size_t Game_state::from_hex(char c) const{
     if (isdigit(c)) return c - '0';
     if (c < 'A' || c > 'F') return 0;
     return c - 'A' + 10;
 }
 
 void Game_state::load_next_round(std::ifstream& ifs) {
-    char enemy = ifs.get();
+    char enemy;
     size_t count;
-    const int dir = 1;
+    enemies.enemies_left = 0;
+    ifs >> enemy;
     while (enemy != '*') {
-        const size_t hp = to_hex(enemy);
-        for (int i = 0; i < count; i++) {
-            enemies.vec.emplace_back(hp, dir);
+        const size_t hp = from_hex(enemy);
+        ifs >> count;
+        for (size_t i = 0; i < count; i++) {
+            enemies.vec.emplace_back(hp);
+            enemies.enemies_left++;
         }
+        ifs >> enemy;
     }
 }
 
@@ -83,13 +87,14 @@ bool Game_state::validate_rounds() const {
 }
 
 void Game_state::print_road(WINDOW* win, std::vector<Coordinates> road) const {
-    for (size_t i = 0; i < road.size(); i++) {
-        if (i < enemies.vec.size() && enemies.vec[i].get_char() != 0) {
-            mvwprintw(win, road[i].y, road[i].x, "%c", enemies.vec[i].get_char());
+    for (size_t i = 0; i < enemies.vec.size(); i++) {
+        size_t enemy_index = enemies.vec[i].road_index;
+        if (enemy_index < road.size() && enemy_index > 0 && enemies.vec[i].get_char() != 0) {
+            mvwprintw(win, road[enemy_index].y, road[enemy_index].x, "%c", enemies.vec[i].get_char());
         }
-        if (i < alies.vec.size() && alies.vec[i].get_char() != 0) {
-            mvwprintw(win, road[i].y, road[i].x, "%c", alies.vec[i].get_char());
-        }
+        // if (i < alies.vec.size() && alies.vec[i].get_char() != 0) {
+        //     mvwprintw(win, road[i].y, road[i].x, "%c", alies.vec[i].get_char());
+        // }
     }
 }
 

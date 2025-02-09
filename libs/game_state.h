@@ -34,6 +34,7 @@ private:
     int game_mode;
     void game_won();
     void game_lost();
+    size_t from_hex(char c) const;
 };
 
 bool select_game_mode(WINDOW* menu, Level& level);
