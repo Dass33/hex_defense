@@ -103,6 +103,7 @@ public:
     friend void round_loop( WINDOW* play_win,Level& level, Game_state& game_state, Coordinates& pos);
     friend void player_actions(Coordinates& pos, WINDOW* win, Level& level,
                                Player_state& player, Game_state& game_state);
+    friend void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_state player);
 private:
     std::vector<char> tiles; ///< 2D grid of level tiles represented as a 1D vector
     size_t yMax, xMax;  ///< Maximum coordinates of the screen

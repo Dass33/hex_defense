@@ -9,9 +9,12 @@
 
 static constexpr size_t BASE_HEALTH = 100;
 static constexpr size_t BASE_ROUNDS = 5;
+constexpr size_t TICK_LENGTH_MS = 10;
+constexpr double ENEMY_INTERVAL = 0.05 * TICK_LENGTH_MS;
 constexpr char DIFFICULTIES[][10] = {"Easy","Medium","Hard"};
 constexpr char ROUNDS_PATH[] = "./assets/rounds";
 constexpr size_t STARTING_MONEY = 240;
+constexpr size_t ROUND_BONUS = 80;
 enum Player_modes { basic, blue_teamer, fire_wall, anti_hex};
 
 class Level;
@@ -30,6 +33,7 @@ public:
     friend void round_loop( WINDOW* play_win,Level& level, Game_state& game_state, Coordinates& pos);
     friend void player_actions(Coordinates& pos, WINDOW* win, Level& level,
                                Player_state& player, Game_state& game_state);
+    friend void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_state player);
 private:
     Enemies enemies;
     Alies alies;
