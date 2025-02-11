@@ -1,5 +1,4 @@
 #include "../libs/turrets.h"
-#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
@@ -52,23 +51,29 @@ Blue_teamer::Blue_teamer(Coordinates pos, std::vector<Coordinates>road) :Turrets
     }
 }
 
+size_t Blue_teamer::find_enemy(Enemies& enemies, std::vector<size_t>& road_in_range) {
+    size_t road_idx = 0;
+    for (size_t enemy_idx = 0; enemy_idx < enemies.vec.size();enemy_idx++) {
+        while (road_in_range[road_idx] > enemies.vec[enemy_idx].road_index) road_idx++;
+        if (enemies.vec[enemy_idx].road_index == road_in_range[road_idx] && enemies.vec[enemy_idx].hp > 0)
+            return enemy_idx;
+    }
+    return enemies.vec.size();
+}
+
 size_t Blue_teamer::attack(Enemies &enemies) {
     if (!attack_interval) {
         attack_interval = BT_ATTACK_INTERVAL;
-        for (size_t i = 0; i < road_in_range.size(); i++) {
-            auto res = std::lower_bound(enemies.vec.rbegin(), enemies.vec.rend(), road_in_range[i],
-            [](auto& enemy, auto& index) {
-                return enemy.road_index > index;
-            });
-            if (res->road_index == road_in_range[i]) {
-                if (enemies.vec[i].hp - damadge <= 0) {
-                    enemies.vec[i].hp = 0;
-                    enemies.enemies_left--;
-                    return damadge + (enemies.vec[i].hp - damadge);
-                } else enemies.vec[i].hp -= damadge;
+        size_t res = find_enemy(enemies, road_in_range);
+        if (res < enemies.vec.size()) {
+            if (enemies.vec[res].hp <= damadge) {
+                enemies.vec[res].hp = 0;
+                enemies.enemies_left--;
+                return damadge + (enemies.vec[res].hp - damadge);
+            } else {
+                enemies.vec[res].hp -= damadge;
                 return damadge;
             }
-            if (res->road_index < road_in_range.back()) return 0;
         }
     }
     attack_interval--;

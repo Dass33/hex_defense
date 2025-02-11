@@ -30,7 +30,7 @@ protected:
 };
 
 constexpr size_t FIRE_WALL_COST = 70;
-constexpr size_t FW_ATTACK_INTERVAL = 200;
+constexpr size_t FW_ATTACK_INTERVAL = 300;
 
 class FireWall : public Turrets {
 public:
@@ -44,7 +44,7 @@ private:
 };
 
 constexpr size_t BLUE_TEAMER_COST = 60;
-constexpr size_t BT_ATTACK_INTERVAL = 120;
+constexpr size_t BT_ATTACK_INTERVAL = 100;
 
 class Blue_teamer : public Turrets {
 public:
@@ -57,7 +57,8 @@ public:
 private:
     size_t damadge = 1;
     size_t enemy_attack_index = 0;
-    size_t range = 3;
+    size_t range = 4;
+    size_t find_enemy(Enemies& enemies, std::vector<size_t>& road_in_range);
     std::vector<size_t>road_in_range;
 };
 
