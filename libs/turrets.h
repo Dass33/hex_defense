@@ -75,10 +75,11 @@ class Anti_hex : public Turrets {
 public:
     Anti_hex(Coordinates pos, const std::vector<Coordinates>& road);
     ~Anti_hex() {};
-    size_t attack(Mv_objects &enemies) override;
+    size_t attack(Mv_objects &mv_objects) override;
     void upgrade() override;
     void print(WINDOW* win) const override;
     int damage = 1;
 private:
     long spawn_index = -1;
+    int occupies_spawn(const Mv_objects &mv_objects) const;
 };

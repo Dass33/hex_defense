@@ -152,11 +152,18 @@ Anti_hex::Anti_hex(Coordinates pos, const std::vector<Coordinates>& road) :Turre
     }
 }
 
+int Anti_hex::occupies_spawn(const Mv_objects &mv_objects) const {
+    // check if at spawn place exists an ally
+    return -1;
+}
+
 size_t Anti_hex::attack(Mv_objects &mv_objects) {
-    if (!attack_interval) {
+    if (!attack_interval && spawn_index ) {
         attack_interval = FW_ATTACK_INTERVAL;
         is_attacking = true;
-        //todo attack
+        if (occupies_spawn(mv_objects) > -1) {
+        // add to ally and don't create a new ally
+        }
         const Moving_object ally(-damage, spawn_index, -1);
         mv_objects.vec.emplace_back(ally);
         mv_objects.alies_count++;

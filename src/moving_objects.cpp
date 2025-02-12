@@ -2,6 +2,8 @@
 #include <cmath>
 #include <cstddef>
 
+#include <ncurses.h>
+
 char Moving_object::get_char() const{
     size_t abs_hp = abs(hp);
     if (abs_hp == 0) return 0;
@@ -11,7 +13,25 @@ char Moving_object::get_char() const{
 
 size_t Mv_objects::update(const size_t count, const size_t road_end_idx) {
     size_t damage_to_player = 0;
-    for (size_t i = 0; i < count; i++) {
+    for (size_t e = vec.size() -1; vec[e].dir < 0;e--) {
+        vec[e].road_index += vec[e].dir;
+        for (size_t i = 0; i < count - alies_count; i++) {
+            if (vec[i].road_index + 1 < vec[e].road_index) break;
+            if (vec[i].road_index == vec[e].road_index && vec[i].hp > 0) {
+                vec[i].hp += vec[e].hp;
+                vec.erase(vec.begin() + e);
+                if (!vec[i].hp) enemies_left--;
+                break;
+            } else if (vec[i].road_index + 1 == vec[e].road_index && vec[i].hp > 0) {
+                vec[i].hp += vec[e].hp;
+                vec.erase(vec.begin() + e);
+                if (!vec[i].hp) enemies_left--;
+                break;
+            }
+
+        }
+    }
+    for (size_t i = 0; i < count - alies_count; i++) {
         vec[i].road_index += vec[i].dir;
         if (!vec[i].road_index) vec[i].hp = 0;
         if (vec[i].hp == 0) continue;
