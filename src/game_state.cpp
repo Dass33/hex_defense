@@ -92,19 +92,15 @@ void Game_state::print_road(WINDOW* win, std::vector<Coordinates> road) const {
         if (enemy_index < road.size() && enemy_index > 0 && mv_objects.vec[i].get_char() != 0) {
             mvwprintw(win, road[enemy_index].y, road[enemy_index].x, "%c", mv_objects.vec[i].get_char());
         }
-        // if (i < alies.vec.size() && alies.vec[i].get_char() != 0) {
-        //     mvwprintw(win, road[i].y, road[i].x, "%c", alies.vec[i].get_char());
-        // }
     }
 }
 
 bool Game_state::turret_collides(Coordinates& pos) {
     for (auto& turret : turrets) {
-        if (turret->get_pos().y == pos.y &&
-            (turret->get_pos().x == pos.x
-            || turret->get_pos().x == pos.x -1
-            || turret->get_pos().x == pos.x +1))
-            return true;
+        if (turret->get_pos().y != pos.y) continue;
+        for (int i = -1; i <= TOWERS_SIZE;i++) {
+            if (turret->get_pos().x == pos.x + i) return true;
+        }
     }
     return false;
 }

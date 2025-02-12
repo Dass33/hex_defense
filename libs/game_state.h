@@ -10,8 +10,8 @@
 
 static constexpr size_t BASE_HEALTH = 100;
 static constexpr size_t BASE_ROUNDS = 5;
-constexpr size_t TICK_LENGTH_MS = 8;
-constexpr double ENEMY_INTERVAL = 0.05 * TICK_LENGTH_MS;
+constexpr size_t TICK_LENGTH_MS = 10;
+constexpr double ENEMY_INTERVAL = 0.04 * TICK_LENGTH_MS;
 constexpr char DIFFICULTIES[][10] = {"Easy","Medium","Hard"};
 constexpr char ROUNDS_PATH[] = "./assets/rounds";
 constexpr size_t STARTING_MONEY = 240;
