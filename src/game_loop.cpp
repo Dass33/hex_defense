@@ -26,7 +26,7 @@ void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_
             if (game_state.money < ANTI_HEX_COST) {
                 //todo
             } else {
-                Turrets* anti_hex = new Anti_hex(pos);
+                Turrets* anti_hex = new Anti_hex(pos, level.road, game_state.alies);
                 game_state.turrets.push_back(anti_hex);
                 game_state.money -= ANTI_HEX_COST;
             }

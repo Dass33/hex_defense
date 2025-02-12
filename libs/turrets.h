@@ -52,7 +52,7 @@ constexpr size_t BT_BASE_RANGE = 4;
 
 class Blue_teamer : public Turrets {
 public:
-    Blue_teamer(Coordinates pos, std::vector<Coordinates>road);
+    Blue_teamer(Coordinates pos, const std::vector<Coordinates>& road);
     ~Blue_teamer() {};
     size_t attack(Enemies &enemies) override;
     void upgrade() override;
@@ -73,11 +73,12 @@ constexpr size_t AH_BASE_RANGE = 2;
 
 class Anti_hex : public Turrets {
 public:
-    Anti_hex(Coordinates pos);
+    Anti_hex(Coordinates pos, const std::vector<Coordinates>& road);
     ~Anti_hex() {};
     size_t attack(Enemies &enemies) override;
     void upgrade() override;
     void print(WINDOW* win) const override;
     size_t damadge = 1;
 private:
+    long spawn_index = -1;
 };
