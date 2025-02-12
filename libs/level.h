@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 #include "coordinates.h"
+#include "win_data.h"
 
 constexpr int MAX_LEVEL = 6;
 constexpr char LEVEL_PATH[] = "./assets/level";
@@ -100,7 +101,7 @@ public:
      */
     friend void get_level(Level &level, std::string level_path);
     friend void game_loop(Level& level, Game_state& init_game_state);
-    friend void round_loop( WINDOW* play_win,Level& level, Game_state& game_state, Coordinates& pos);
+    friend void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordinates& pos);
     friend void player_actions(Coordinates& pos, WINDOW* win, Level& level,
                                Player_state& player, Game_state& game_state);
     friend void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_state player);

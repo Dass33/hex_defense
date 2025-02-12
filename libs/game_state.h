@@ -6,10 +6,11 @@
 #include "coordinates.h"
 #include "moving_objects.h"
 #include "turrets.h"
+#include "win_data.h"
 
 static constexpr size_t BASE_HEALTH = 100;
 static constexpr size_t BASE_ROUNDS = 5;
-constexpr size_t TICK_LENGTH_MS = 10;
+constexpr size_t TICK_LENGTH_MS = 8;
 constexpr double ENEMY_INTERVAL = 0.05 * TICK_LENGTH_MS;
 constexpr char DIFFICULTIES[][10] = {"Easy","Medium","Hard"};
 constexpr char ROUNDS_PATH[] = "./assets/rounds";
@@ -30,7 +31,7 @@ public:
     void print_road(WINDOW* win, std::vector<Coordinates>road) const;
     bool turret_collides(Coordinates& pos);
     friend void game_loop(Level& level, Game_state& init_game_state);
-    friend void round_loop( WINDOW* play_win,Level& level, Game_state& game_state, Coordinates& pos);
+    friend void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordinates& pos);
     friend void player_actions(Coordinates& pos, WINDOW* win, Level& level,
                                Player_state& player, Game_state& game_state);
     friend void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_state player);

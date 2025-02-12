@@ -13,14 +13,14 @@ size_t Enemies::update(size_t count, size_t road_end_idx) {
         vec[i].road_index++;
         if (vec[i].hp == 0) continue;
 
-        if (vec[i].curr_round_damadge) {
+        /*if (vec[i].curr_round_damadge) {
             vec[i].hp -= vec[i].curr_round_damadge;
             vec[i].curr_round_damadge = 0;
             if (vec[i].hp == 0) {
                 enemies_left--;
                 continue;
             }
-        }
+        }*/
         if (vec[i].road_index == road_end_idx) {
             damadge_to_player += vec[i].hp;
             vec[i].hp = 0;

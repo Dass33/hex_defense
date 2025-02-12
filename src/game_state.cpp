@@ -63,8 +63,8 @@ void Game_state::load_next_round(std::ifstream& ifs) {
         ifs >> count;
         for (size_t i = 0; i < count; i++) {
             enemies.vec.emplace_back(hp);
-            enemies.enemies_left++;
         }
+        if (hp > 0) enemies.enemies_left += count;
         ifs >> enemy;
     }
 }

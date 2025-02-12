@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
+#include <ncurses.h>
 #include <vector>
 
 Turrets::Turrets(const Coordinates pos){
@@ -13,10 +14,30 @@ Coordinates Turrets::get_pos() {
     return pos;
 }
 
+static constexpr size_t MODE_TO_RANGE[] = {BT_BASE_RANGE, FW_BASE_RANGE, AH_BASE_RANGE};
+
+void Turrets::print_range(Win_data win_data, Coordinates& pos, size_t mode) {
+    if (!mode || mode > sizeof MODE_TO_RANGE / sizeof(size_t)) return;
+    wattron(win_data.win, COLOR_PAIR(1));
+    if (pos.y + 2 < win_data.height) mvwprintw(win_data.win,pos.y + 1, pos.x + 1, "|");
+    if (pos.y - 1 > 0) mvwprintw(win_data.win,pos.y - 1, pos.x + 1, "|");
+
+    size_t i = 2;
+    for (; i <= MODE_TO_RANGE[mode -1]; i++) {
+        if (pos.x + 2 + i < win_data.width) mvwprintw(win_data.win,pos.y, pos.x + 1 + i, "-");
+        if (pos.x + 1 - i > 0) mvwprintw(win_data.win,pos.y, pos.x + 1 - i, "-");
+        if (pos.y + i + 1 < win_data.height) mvwprintw(win_data.win,pos.y + i, pos.x + 1, "|");
+        if (pos.y - i > 0) mvwprintw(win_data.win,pos.y - i, pos.x + 1, "|");
+    }
+    if (pos.x + 2 + i < win_data.width) mvwprintw(win_data.win,pos.y, pos.x + 1 + i, "-");
+    if (pos.x + 1 - i > 0) mvwprintw(win_data.win,pos.y, pos.x + 1 - i, "-");
+    wattroff(win_data.win, COLOR_PAIR(1));
+}
+
 bool in_range(Coordinates& pos_turret, Coordinates& pos_enemy, size_t range) {
-    long x_diff = std::abs(static_cast<long>(pos_turret.x) - static_cast<long>(pos_enemy.x));
+    long x_diff = std::abs(static_cast<long>(pos_turret.x + 1) - static_cast<long>(pos_enemy.x));
     long y_diff = std::abs(static_cast<long>(pos_turret.y) - static_cast<long>(pos_enemy.y));
-    if (hypot(x_diff, y_diff) > static_cast<double>(range)) return false;
+    if (hypot(x_diff -1, y_diff) > static_cast<double>(range)) return false;
     return true;
 }
 
@@ -51,21 +72,27 @@ Blue_teamer::Blue_teamer(Coordinates pos, std::vector<Coordinates>road) :Turrets
     }
 }
 
-size_t Blue_teamer::find_enemy(Enemies& enemies, std::vector<size_t>& road_in_range) {
+size_t Blue_teamer::find_enemy(Enemies& enemies) {
     size_t road_idx = 0;
     for (size_t enemy_idx = 0; enemy_idx < enemies.vec.size();enemy_idx++) {
-        while (road_in_range[road_idx] > enemies.vec[enemy_idx].road_index) road_idx++;
-        if (enemies.vec[enemy_idx].road_index == road_in_range[road_idx] && enemies.vec[enemy_idx].hp > 0)
+        size_t enemy_road = enemies.vec[enemy_idx].road_index;
+
+        while (road_in_range[road_idx] > enemy_road && road_idx +1 < road_in_range.size()) {
+            road_idx++;
+        }
+        if (enemy_road == road_in_range[road_idx] && enemies.vec[enemy_idx].hp > 0){
             return enemy_idx;
+        }
     }
     return enemies.vec.size();
 }
 
 size_t Blue_teamer::attack(Enemies &enemies) {
-    if (!attack_interval) {
+    if (!attack_interval && road_in_range.size()) {
         attack_interval = BT_ATTACK_INTERVAL;
-        size_t res = find_enemy(enemies, road_in_range);
+        size_t res = find_enemy(enemies);
         if (res < enemies.vec.size()) {
+            is_attacking = true;
             if (enemies.vec[res].hp <= damadge) {
                 enemies.vec[res].hp = 0;
                 enemies.enemies_left--;
@@ -74,7 +101,7 @@ size_t Blue_teamer::attack(Enemies &enemies) {
                 enemies.vec[res].hp -= damadge;
                 return damadge;
             }
-        }
+        } is_attacking = false;
     }
     attack_interval--;
     return 0;
@@ -83,11 +110,22 @@ size_t Blue_teamer::attack(Enemies &enemies) {
 void Blue_teamer::upgrade() {}
 
 void Blue_teamer::print(WINDOW* win) const {
-    mvwprintw(win, pos.y, pos.x -1, "%s", TOWERS_ICONS[2]);
+    if (attack_interval > BT_ATTACK_INTERVAL / 2 && is_attacking) {
+        wattron(win, COLOR_PAIR(5));
+    }
+    mvwprintw(win, pos.y, pos.x -1, "%c", TOWERS_ICONS[2][0]);
+    mvwprintw(win, pos.y, pos.x + 1, "%c", TOWERS_ICONS[2][2]);
+    wattroff(win, COLOR_PAIR(5));
+    if (attack_interval < BT_ATTACK_INTERVAL / 2 && is_attacking) {
+        wattron(win, COLOR_PAIR(2));
+    }
+    mvwprintw(win, pos.y, pos.x, "%c", TOWERS_ICONS[2][1]);
+    wattroff(win, COLOR_PAIR(2));
 }
 
 void Blue_teamer::round_reset() {
-    enemy_attack_index = 0;
+    attack_idx = 0;
+    is_attacking = false;
 }
 
 Anti_hex::Anti_hex(Coordinates pos) :Turrets(pos){}

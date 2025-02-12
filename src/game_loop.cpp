@@ -2,13 +2,13 @@
 #include "../libs/game_state.h"
 #include "../libs/moving_objects.h"
 #include "../libs/turrets.h"
+#include "../libs/win_data.h"
 #include <chrono>
 #include <cstddef>
 #include <fstream>
 #include <ncurses.h>
 #include <string>
 #include <thread>
-//#include <chrono>
 
 #define curr_round game_state.curr_round
 #define rounds_count game_state.rounds_count
@@ -83,7 +83,7 @@ void player_actions(Coordinates& pos, WINDOW* win, Level& level,
             player.icon.assign(PLAYER_ICON);
             player.mode = basic;
             break;
-        case 'j':
+        case 'l':
             player.icon.assign(TOWERS_ICONS[0]);
             player.mode = anti_hex;
         break;
@@ -91,7 +91,7 @@ void player_actions(Coordinates& pos, WINDOW* win, Level& level,
             player.icon.assign(TOWERS_ICONS[1]);
             player.mode = fire_wall;
         break;
-        case 'l':
+        case 'j':
             player.icon.assign(TOWERS_ICONS[2]);
             player.mode = blue_teamer;
         break;
@@ -108,8 +108,8 @@ void player_actions(Coordinates& pos, WINDOW* win, Level& level,
     } else player.attributes = 0;
 }
 
-void round_loop(WINDOW* play_win,Level& level, Game_state& game_state, Coordinates& pos) {
-    nodelay(play_win, true);
+void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordinates& pos) {
+    nodelay(win_data.win, true);
     size_t max_enemies = game_state.enemies.vec.size();
     size_t curr_enemies = 0;
     Player_state player;
@@ -120,15 +120,15 @@ void round_loop(WINDOW* play_win,Level& level, Game_state& game_state, Coordinat
     auto last_enemy_move = std::chrono::steady_clock::now();
     std::chrono::duration<double>enemy_interval(ENEMY_INTERVAL);
     while (game_state.enemies.enemies_left) {
-        player_actions(pos, play_win, level, player, game_state);
-        level.print_level(play_win);
+        player_actions(pos, win_data.win, level, player, game_state);
+        level.print_level(win_data.win);
         mvprintw(1, 0, "Enemies left: %02ld", game_state.enemies.enemies_left);
         mvprintw(2, 0, "hp: %03ld", game_state.curr_hp);
         mvprintw(3, 0, "$ %5ld ", game_state.money);
 
         for (auto& turret : game_state.turrets) {
             game_state.money += turret->attack(game_state.enemies);
-            turret->print(play_win);
+            turret->print(win_data.win);
         }
 
         auto now = std::chrono::steady_clock::now();
@@ -137,17 +137,25 @@ void round_loop(WINDOW* play_win,Level& level, Game_state& game_state, Coordinat
             if (curr_enemies < max_enemies) curr_enemies++;
             game_state.curr_hp -= game_state.enemies.update(curr_enemies, level.road.size() -1);
         }
-        game_state.print_road(play_win, level.road);
-        wattron(play_win, player.attributes);
-        mvwprintw(play_win, pos.y, pos.x, "%s", player.icon.c_str());
-        wattroff(play_win, player.attributes);
+        game_state.print_road(win_data.win, level.road);
+        wattron(win_data.win, player.attributes);
+        mvwprintw(win_data.win, pos.y, pos.x, "%s", player.icon.c_str());
+        Turrets::print_range(win_data, pos, player.mode);
+        wattroff(win_data.win, player.attributes);
 
         refresh();
-        wrefresh(play_win);
+        wrefresh(win_data.win);
         //> Sleep to reduce the load on CPU
         std::this_thread::sleep_for(std::chrono::milliseconds(TICK_LENGTH_MS));
     }
-    nodelay(play_win, false);
+    nodelay(win_data.win, false);
+}
+
+void init_color_pairs() {
+    init_pair(2, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(3, COLOR_BLUE, COLOR_BLACK);
+    init_pair(4, COLOR_GREEN, COLOR_BLACK);
+    init_pair(5, COLOR_CYAN, COLOR_BLACK);
 }
 
 void game_loop(Level& level, Game_state& game_state) {
@@ -157,6 +165,7 @@ void game_loop(Level& level, Game_state& game_state) {
     WINDOW *play_win = newwin(level.winHeight, level.winWidth, win_y_start, win_x_start);
     keypad(play_win, true);
 
+    init_color_pairs();
     Coordinates pos(1,1);
 
     level.print_level(play_win);
@@ -164,13 +173,15 @@ void game_loop(Level& level, Game_state& game_state) {
     wrefresh(play_win);
 
     std::ifstream rounds_file(ROUNDS_PATH);
+
+    Win_data win_data = {play_win, level.winHeight, level.winWidth};
     
     for (;curr_round < rounds_count ;curr_round++) {
         mvprintw(0, 0, "Round %ld", curr_round);
         refresh();
         game_state.load_next_round(rounds_file);
         for (auto& turret :game_state.turrets) turret->round_reset();
-        round_loop(play_win, level, game_state, pos);
+        round_loop(win_data, level, game_state, pos);
         game_state.enemies.vec.clear();
         game_state.money += ROUND_BONUS;
     }
