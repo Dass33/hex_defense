@@ -36,8 +36,7 @@ public:
                                Player_state& player, Game_state& game_state);
     friend void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_state player);
 private:
-    Enemies enemies;
-    Alies alies;
+    Mv_objects mv_objects;
     std::vector<Turrets*> turrets;
     size_t curr_round = 0;
     size_t rounds_count;

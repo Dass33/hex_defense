@@ -26,7 +26,7 @@ void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_
             if (game_state.money < ANTI_HEX_COST) {
                 //todo
             } else {
-                Turrets* anti_hex = new Anti_hex(pos, level.road, game_state.alies);
+                Turrets* anti_hex = new Anti_hex(pos, level.road);
                 game_state.turrets.push_back(anti_hex);
                 game_state.money -= ANTI_HEX_COST;
             }
@@ -110,7 +110,7 @@ void player_actions(Coordinates& pos, WINDOW* win, Level& level,
 
 void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordinates& pos) {
     nodelay(win_data.win, true);
-    size_t max_enemies = game_state.enemies.vec.size();
+    size_t max_enemies = game_state.mv_objects.vec.size();
     size_t curr_enemies = 0;
     Player_state player;
     player.mode = basic;
@@ -119,15 +119,15 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
 
     auto last_enemy_move = std::chrono::steady_clock::now();
     std::chrono::duration<double>enemy_interval(ENEMY_INTERVAL);
-    while (game_state.enemies.enemies_left) {
+    while (game_state.mv_objects.enemies_left) {
         player_actions(pos, win_data.win, level, player, game_state);
         level.print_level(win_data.win);
-        mvprintw(1, 0, "Enemies left: %02ld", game_state.enemies.enemies_left);
+        mvprintw(1, 0, "Enemies left: %02ld", game_state.mv_objects.enemies_left);
         mvprintw(2, 0, "hp: %03ld", game_state.curr_hp);
         mvprintw(3, 0, "$ %5ld ", game_state.money);
 
         for (auto& turret : game_state.turrets) {
-            game_state.money += turret->attack(game_state.enemies);
+            game_state.money += turret->attack(game_state.mv_objects);
             turret->print(win_data.win);
         }
 
@@ -135,7 +135,7 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
         if (now -last_enemy_move > enemy_interval) {
             last_enemy_move = now;
             if (curr_enemies < max_enemies) curr_enemies++;
-            game_state.curr_hp -= game_state.enemies.update(curr_enemies, level.road.size() -1);
+            game_state.curr_hp -= game_state.mv_objects.update(curr_enemies, level.road.size() -1);
         }
         game_state.print_road(win_data.win, level.road);
         wattron(win_data.win, player.attributes);
@@ -182,7 +182,7 @@ void game_loop(Level& level, Game_state& game_state) {
         game_state.load_next_round(rounds_file);
         for (auto& turret :game_state.turrets) turret->round_reset();
         round_loop(win_data, level, game_state, pos);
-        game_state.enemies.vec.clear();
+        game_state.mv_objects.vec.clear();
         game_state.money += ROUND_BONUS;
     }
 

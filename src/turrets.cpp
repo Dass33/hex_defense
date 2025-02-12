@@ -16,7 +16,7 @@ Coordinates Turrets::get_pos() {
 
 static constexpr size_t MODE_TO_RANGE[] = {BT_BASE_RANGE, FW_BASE_RANGE, AH_BASE_RANGE};
 
-void Turrets::print_range(Win_data win_data, Coordinates& pos, size_t mode) {
+void Turrets::print_range(Win_data win_data, const Coordinates& pos, const size_t mode) {
     if (!mode || mode > sizeof MODE_TO_RANGE / sizeof(size_t)) return;
     wattron(win_data.win, COLOR_PAIR(1));
     if (pos.y + 2 < win_data.height) mvwprintw(win_data.win,pos.y + 1, pos.x + 1, "|");
@@ -43,7 +43,7 @@ bool in_range(Coordinates& pos_turret, const Coordinates& pos_enemy, size_t rang
 
 FireWall::FireWall(Coordinates pos) :Turrets(pos){}
 
-size_t FireWall::attack(Enemies &enemies) {
+size_t FireWall::attack(Mv_objects &enemies) {
     if (!attack_interval) {
         attack_interval = FW_ATTACK_INTERVAL;
         size_t attack_index = 0;
@@ -53,12 +53,12 @@ size_t FireWall::attack(Enemies &enemies) {
             return 0;
         }
         is_attacking = true;
-        if (enemies.vec[attack_index].hp - damadge <= 0) {
+        if (enemies.vec[attack_index].hp - damage <= 0) {
             enemies.vec[attack_index].hp = 0;
             enemies.enemies_left--;
-            return damadge + (enemies.vec[attack_index].hp - damadge);
-        } else enemies.vec[attack_index].hp -= damadge;
-        return damadge;
+            return damage + (enemies.vec[attack_index].hp - damage);
+        } else enemies.vec[attack_index].hp -= damage;
+        return damage;
     }
     attack_interval--;
     return 0;
@@ -87,7 +87,7 @@ Blue_teamer::Blue_teamer(Coordinates pos, const std::vector<Coordinates>& road) 
     }
 }
 
-size_t Blue_teamer::find_enemy(Enemies& enemies) {
+size_t Blue_teamer::find_enemy(Mv_objects& enemies) {
     size_t road_idx = 0;
     for (size_t enemy_idx = 0; enemy_idx < enemies.vec.size();enemy_idx++) {
         size_t enemy_road = enemies.vec[enemy_idx].road_index;
@@ -102,20 +102,19 @@ size_t Blue_teamer::find_enemy(Enemies& enemies) {
     return enemies.vec.size();
 }
 
-size_t Blue_teamer::attack(Enemies &enemies) {
-    if (!attack_interval && road_in_range.size()) {
+size_t Blue_teamer::attack(Mv_objects &enemies) {
+    if (!attack_interval && !road_in_range.empty()) {
         attack_interval = BT_ATTACK_INTERVAL;
-        size_t res = find_enemy(enemies);
+        const size_t res = find_enemy(enemies);
         if (res < enemies.vec.size()) {
             is_attacking = true;
-            if (enemies.vec[res].hp <= damadge) {
+            if (enemies.vec[res].hp <= damage) {
                 enemies.vec[res].hp = 0;
                 enemies.enemies_left--;
-                return damadge + (enemies.vec[res].hp - damadge);
-            } else {
-                enemies.vec[res].hp -= damadge;
-                return damadge;
+                return damage + (enemies.vec[res].hp - damage);
             }
+            enemies.vec[res].hp -= damage;
+            return damage;
         } is_attacking = false;
     }
     attack_interval--;
@@ -153,13 +152,14 @@ Anti_hex::Anti_hex(Coordinates pos, const std::vector<Coordinates>& road) :Turre
     }
 }
 
-size_t Anti_hex::attack(Enemies &enemies) {
+size_t Anti_hex::attack(Mv_objects &mv_objects) {
     if (!attack_interval) {
         attack_interval = FW_ATTACK_INTERVAL;
         is_attacking = true;
         //todo attack
-        if (enemies.vec[0].hp) enemies.vec[0].hp -= damadge;
-        return damadge;
+        const Moving_object ally(-damage, spawn_index, -1);
+        mv_objects.vec.emplace_back(ally);
+        return damage;
     }
     attack_interval--;
     return 0;

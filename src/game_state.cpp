@@ -56,15 +56,15 @@ size_t Game_state::from_hex(char c) const{
 void Game_state::load_next_round(std::ifstream& ifs) {
     char enemy;
     size_t count;
-    enemies.enemies_left = 0;
+    mv_objects.enemies_left = 0;
     ifs >> enemy;
     while (enemy != '*') {
         const size_t hp = from_hex(enemy);
         ifs >> count;
         for (size_t i = 0; i < count; i++) {
-            enemies.vec.emplace_back(hp);
+            mv_objects.vec.emplace_back(hp);
         }
-        if (hp > 0) enemies.enemies_left += count;
+        if (hp > 0) mv_objects.enemies_left += count;
         ifs >> enemy;
     }
 }
@@ -87,10 +87,10 @@ bool Game_state::validate_rounds() const {
 }
 
 void Game_state::print_road(WINDOW* win, std::vector<Coordinates> road) const {
-    for (size_t i = 0; i < enemies.vec.size(); i++) {
-        size_t enemy_index = enemies.vec[i].road_index;
-        if (enemy_index < road.size() && enemy_index > 0 && enemies.vec[i].get_char() != 0) {
-            mvwprintw(win, road[enemy_index].y, road[enemy_index].x, "%c", enemies.vec[i].get_char());
+    for (size_t i = 0; i < mv_objects.vec.size(); i++) {
+        size_t enemy_index = mv_objects.vec[i].road_index;
+        if (enemy_index < road.size() && enemy_index > 0 && mv_objects.vec[i].get_char() != 0) {
+            mvwprintw(win, road[enemy_index].y, road[enemy_index].x, "%c", mv_objects.vec[i].get_char());
         }
         // if (i < alies.vec.size() && alies.vec[i].get_char() != 0) {
         //     mvwprintw(win, road[i].y, road[i].x, "%c", alies.vec[i].get_char());
