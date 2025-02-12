@@ -13,6 +13,7 @@ size_t Mv_objects::update(const size_t count, const size_t road_end_idx) {
     size_t damage_to_player = 0;
     for (size_t i = 0; i < count; i++) {
         vec[i].road_index += vec[i].dir;
+        if (!vec[i].road_index) vec[i].hp = 0;
         if (vec[i].hp == 0) continue;
 
         if (vec[i].road_index == road_end_idx) {

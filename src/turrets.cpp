@@ -159,6 +159,7 @@ size_t Anti_hex::attack(Mv_objects &mv_objects) {
         //todo attack
         const Moving_object ally(-damage, spawn_index, -1);
         mv_objects.vec.emplace_back(ally);
+        mv_objects.alies_count++;
         return damage;
     }
     attack_interval--;

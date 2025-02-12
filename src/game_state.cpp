@@ -109,7 +109,7 @@ bool Game_state::turret_collides(Coordinates& pos) {
     return false;
 }
 
-Game_state::Game_state(int difficulty, int game_mode)
+Game_state::Game_state(const int difficulty, const int game_mode)
     :difficulty(difficulty), game_mode(game_mode) {
     curr_hp = BASE_HEALTH / difficulty;
     rounds_count = BASE_ROUNDS * difficulty * difficulty;

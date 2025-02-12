@@ -23,7 +23,7 @@ class Player_state;
 
 class Game_state {
 public:
-    Game_state(int difficulty, int game_mode = 0);
+    explicit Game_state(int difficulty, int game_mode = 0);
     ~Game_state();
     void load_next_round(std::ifstream& ifs);
     bool save_state() const;
@@ -46,7 +46,7 @@ private:
     int game_mode;
     void game_won();
     void game_lost();
-    size_t from_hex(char c) const;
+    [[nodiscard]] size_t from_hex(char c) const;
 };
 
 bool select_game_mode(WINDOW* menu, Level& level);

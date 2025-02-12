@@ -20,12 +20,5 @@ public:
     std::vector<Moving_object> vec;
     size_t update(size_t count, size_t road_end_idx);
     size_t enemies_left = 0;
-};
-
-
-class Alies {
-public:
-    void spawn_new_ally(size_t index);
-    void update();
-    std::vector<Moving_object> vec;
+    size_t alies_count = 0;
 };

@@ -135,7 +135,8 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
         if (now -last_enemy_move > enemy_interval) {
             last_enemy_move = now;
             if (curr_enemies < max_enemies) curr_enemies++;
-            game_state.curr_hp -= game_state.mv_objects.update(curr_enemies, level.road.size() -1);
+            const size_t curr_objects = curr_enemies + game_state.mv_objects.alies_count;
+            game_state.curr_hp -= game_state.mv_objects.update(curr_objects, level.road.size() -1);
         }
         game_state.print_road(win_data.win, level.road);
         wattron(win_data.win, player.attributes);
