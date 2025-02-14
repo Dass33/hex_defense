@@ -81,5 +81,5 @@ public:
     int damage = 1;
 private:
     long spawn_index = -1;
-    int occupies_spawn(const Mv_objects &mv_objects) const;
+    [[nodiscard]] long spawn_collision(const Mv_objects &mv_objects) const;
 };

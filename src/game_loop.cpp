@@ -19,7 +19,7 @@ struct Player_state {
     attr_t attributes;
 };
 
-void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_state player) {
+void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_state& player) {
     switch (player.mode) {
         case basic: break;
         case anti_hex:
@@ -52,12 +52,12 @@ void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_
     }
 }
 
-void player_actions(Coordinates& pos, WINDOW* win, Level& level,
+bool player_actions(Coordinates& pos, WINDOW* win, Level& level,
                     Player_state& player, Game_state& game_state) {
     int input = wgetch(win);
 
     switch (input) {
-        case ERR: return;
+        case ERR: return true;
         case KEY_UP:
             pos.y--;
             if (pos.y < 1) pos.y = level.winHeight -2;
@@ -95,6 +95,7 @@ void player_actions(Coordinates& pos, WINDOW* win, Level& level,
             player.icon.assign(TOWERS_ICONS[2]);
             player.mode = blue_teamer;
         break;
+        case 's': return false;
         //> 10 == KEY_ENTER
         case 10:
             if (!level.clear_n_tiles(pos, TOWERS_SIZE)
@@ -106,6 +107,7 @@ void player_actions(Coordinates& pos, WINDOW* win, Level& level,
         || game_state.turret_collides(pos))) {
         player.attributes = COLOR_PAIR(1);
     } else player.attributes = 0;
+    return true;
 }
 
 void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordinates& pos) {
@@ -152,6 +154,27 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
     nodelay(win_data.win, false);
 }
 
+
+void round_preparation(Coordinates& pos, Win_data& win_data, Level& level, Game_state& game_state) {
+    nodelay(win_data.win, false);
+    Player_state player = {PLAYER_ICON, basic, 0};
+    do {
+        mvprintw(1, 0, "Enemies left: %02ld", game_state.mv_objects.enemies_left);
+        mvprintw(2, 0, "hp: %03ld", game_state.curr_hp);
+        mvprintw(3, 0, "$ %5ld ", game_state.money);
+        level.print_level(win_data.win);
+
+        for (auto& turret : game_state.turrets) turret->print(win_data.win);
+
+        wattron(win_data.win, player.attributes);
+        mvwprintw(win_data.win, pos.y, pos.x, "%s", player.icon.c_str());
+        Turrets::print_range(win_data, pos, player.mode);
+        wattroff(win_data.win, player.attributes);
+        refresh();
+        wrefresh(win_data.win);
+    } while (player_actions(pos, win_data.win, level, player, game_state));
+}
+
 void init_color_pairs() {
     init_pair(2, COLOR_YELLOW, COLOR_BLACK);
     init_pair(3, COLOR_BLUE, COLOR_BLACK);
@@ -169,6 +192,9 @@ void game_loop(Level& level, Game_state& game_state) {
     init_color_pairs();
     Coordinates pos(1,1);
 
+
+    mvprintw(0, 0, "Round:  0");
+    refresh();
     level.print_level(play_win);
     mvwprintw(play_win,1,1, PLAYER_ICON);
     wrefresh(play_win);
@@ -178,8 +204,8 @@ void game_loop(Level& level, Game_state& game_state) {
     Win_data win_data = {play_win, level.winHeight, level.winWidth};
     
     for (;curr_round < rounds_count ;curr_round++) {
-        mvprintw(0, 0, "Round %ld", curr_round);
-        refresh();
+        round_preparation(pos, win_data, level, game_state);
+        mvprintw(0, 0, "Round: %2ld", curr_round);
         game_state.load_next_round(rounds_file);
         for (auto& turret :game_state.turrets) turret->round_reset();
         round_loop(win_data, level, game_state, pos);

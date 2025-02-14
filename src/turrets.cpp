@@ -18,19 +18,12 @@ static constexpr size_t MODE_TO_RANGE[] = {BT_BASE_RANGE, FW_BASE_RANGE, AH_BASE
 
 void Turrets::print_range(Win_data win_data, const Coordinates& pos, const size_t mode) {
     if (!mode || mode > sizeof MODE_TO_RANGE / sizeof(size_t)) return;
+    size_t range = MODE_TO_RANGE[mode -1];
     wattron(win_data.win, COLOR_PAIR(1));
-    if (pos.y + 2 < win_data.height) mvwprintw(win_data.win,pos.y + 1, pos.x + 1, "|");
-    if (pos.y - 1 > 0) mvwprintw(win_data.win,pos.y - 1, pos.x + 1, "|");
-
-    size_t i = 2;
-    for (; i <= MODE_TO_RANGE[mode -1]; i++) {
-        if (pos.x + 2 + i < win_data.width) mvwprintw(win_data.win,pos.y, pos.x + 1 + i, "-");
-        if (pos.x + 1 - i > 0) mvwprintw(win_data.win,pos.y, pos.x + 1 - i, "-");
-        if (pos.y + i + 1 < win_data.height) mvwprintw(win_data.win,pos.y + i, pos.x + 1, "|");
-        if (pos.y - i > 0) mvwprintw(win_data.win,pos.y - i, pos.x + 1, "|");
-    }
-    if (pos.x + 2 + i < win_data.width) mvwprintw(win_data.win,pos.y, pos.x + 1 + i, "-");
-    if (pos.x + 1 - i > 0) mvwprintw(win_data.win,pos.y, pos.x + 1 - i, "-");
+    if (pos.x + 2 + range < win_data.width) mvwprintw(win_data.win,pos.y, pos.x + 2 + range, ".");
+    if (pos.x - range > 0) mvwprintw(win_data.win,pos.y, pos.x - range, ".");
+    if (pos.y + range + 1 < win_data.height) mvwprintw(win_data.win,pos.y + range, pos.x + 1, ".");
+    if (pos.y - range > 0) mvwprintw(win_data.win,pos.y - range, pos.x + 1, ".");
     wattroff(win_data.win, COLOR_PAIR(1));
 }
 
@@ -141,6 +134,7 @@ void Blue_teamer::print(WINDOW* win) const {
 void Blue_teamer::round_reset() {
     attack_idx = 0;
     is_attacking = false;
+    attack_interval = BT_ATTACK_INTERVAL;
 }
 
 Anti_hex::Anti_hex(Coordinates pos, const std::vector<Coordinates>& road) :Turrets(pos){ 
@@ -152,8 +146,10 @@ Anti_hex::Anti_hex(Coordinates pos, const std::vector<Coordinates>& road) :Turre
     }
 }
 
-int Anti_hex::occupies_spawn(const Mv_objects &mv_objects) const {
-    // check if at spawn place exists an ally
+long Anti_hex::spawn_collision(const Mv_objects &mv_objects) const {
+    for (size_t idx = mv_objects.vec.size() - 1; mv_objects.vec[idx].dir < 0;idx--) {
+        if (mv_objects.vec[idx].road_index == static_cast<size_t>(spawn_index)) return idx;
+    }
     return -1;
 }
 
@@ -161,8 +157,10 @@ size_t Anti_hex::attack(Mv_objects &mv_objects) {
     if (!attack_interval && spawn_index ) {
         attack_interval = FW_ATTACK_INTERVAL;
         is_attacking = true;
-        if (occupies_spawn(mv_objects) > -1) {
-        // add to ally and don't create a new ally
+        const long collision_idx = spawn_collision(mv_objects);
+        if (collision_idx > -1) {
+            mv_objects.vec[collision_idx].hp -= damage + 1;
+            return damage + 1;
         }
         const Moving_object ally(-damage, spawn_index, -1);
         mv_objects.vec.emplace_back(ally);

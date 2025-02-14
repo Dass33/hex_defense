@@ -17,18 +17,15 @@ size_t Mv_objects::update(const size_t count, const size_t road_end_idx) {
         vec[e].road_index += vec[e].dir;
         for (size_t i = 0; i < count - alies_count; i++) {
             if (vec[i].road_index + 1 < vec[e].road_index) break;
-            if (vec[i].road_index == vec[e].road_index && vec[i].hp > 0) {
+
+            if (vec[i].hp > 0 && ( vec[i].road_index == vec[e].road_index
+               || vec[i].road_index + 1 == vec[e].road_index)) {
                 vec[i].hp += vec[e].hp;
-                vec.erase(vec.begin() + e);
-                if (!vec[i].hp) enemies_left--;
-                break;
-            } else if (vec[i].road_index + 1 == vec[e].road_index && vec[i].hp > 0) {
-                vec[i].hp += vec[e].hp;
+                if (vec[i].hp < 0) vec[i].hp = 0;
                 vec.erase(vec.begin() + e);
                 if (!vec[i].hp) enemies_left--;
                 break;
             }
-
         }
     }
     for (size_t i = 0; i < count - alies_count; i++) {

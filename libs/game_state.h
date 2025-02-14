@@ -32,9 +32,10 @@ public:
     bool turret_collides(Coordinates& pos);
     friend void game_loop(Level& level, Game_state& init_game_state);
     friend void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordinates& pos);
-    friend void player_actions(Coordinates& pos, WINDOW* win, Level& level,
+    friend bool player_actions(Coordinates& pos, WINDOW* win, Level& level,
                                Player_state& player, Game_state& game_state);
-    friend void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_state player);
+    friend void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_state& player);
+    friend void round_preparation(Coordinates& pos, Win_data& win_data, Level& level, Game_state& game_state);
 private:
     Mv_objects mv_objects;
     std::vector<Turrets*> turrets;
