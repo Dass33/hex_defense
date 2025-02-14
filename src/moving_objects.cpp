@@ -13,9 +13,10 @@ char Moving_object::get_char() const{
 
 size_t Mv_objects::update(const size_t count, const size_t road_end_idx) {
     size_t damage_to_player = 0;
-    for (size_t e = vec.size() -1; vec[e].dir < 0;e--) {
+    const size_t vec_size = vec.size();
+    for (size_t e = vec_size -1; vec[e].dir < 0;e--) {
         vec[e].road_index += vec[e].dir;
-        for (size_t i = 0; i < count - alies_count; i++) {
+        for (size_t i = 0; i < count - allies_count; i++) {
             if (vec[i].road_index + 1 < vec[e].road_index) break;
 
             if (vec[i].hp > 0 && ( vec[i].road_index == vec[e].road_index
@@ -23,12 +24,12 @@ size_t Mv_objects::update(const size_t count, const size_t road_end_idx) {
                 vec[i].hp += vec[e].hp;
                 if (vec[i].hp < 0) vec[i].hp = 0;
                 vec.erase(vec.begin() + e);
-                if (!vec[i].hp) enemies_left--;
+                if (!vec[i].hp) --enemies_left;
                 break;
             }
         }
     }
-    for (size_t i = 0; i < count - alies_count; i++) {
+    for (size_t i = 0; i < count - allies_count; i++) {
         vec[i].road_index += vec[i].dir;
         if (!vec[i].road_index) vec[i].hp = 0;
         if (vec[i].hp == 0) continue;
@@ -36,7 +37,7 @@ size_t Mv_objects::update(const size_t count, const size_t road_end_idx) {
         if (vec[i].road_index == road_end_idx) {
             damage_to_player += vec[i].hp;
             vec[i].hp = 0;
-            enemies_left--;
+            --enemies_left;
         }
     }
     return damage_to_player;

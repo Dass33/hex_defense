@@ -38,7 +38,7 @@ FireWall::FireWall(Coordinates pos) :Turrets(pos){}
 
 size_t FireWall::attack(Mv_objects &enemies) {
     if (!attack_interval) {
-        attack_interval = FIRE_WALL.range;
+        attack_interval = FIRE_WALL.attack_interval;
         size_t attack_index = 0;
         while (enemies.vec[attack_index].hp < 1) attack_index++;
         if (attack_index >= enemies.vec.size()) {
@@ -155,16 +155,18 @@ long Anti_hex::spawn_collision(const Mv_objects &mv_objects) const {
 
 size_t Anti_hex::attack(Mv_objects &mv_objects) {
     if (!attack_interval && spawn_index ) {
-        attack_interval = FIRE_WALL.attack_interval;
+        attack_interval = ANTI_HEX.attack_interval;
         is_attacking = true;
         const long collision_idx = spawn_collision(mv_objects);
         if (collision_idx > -1) {
-            mv_objects.vec[collision_idx].hp -= damage + 1;
+            if (mv_objects.vec[collision_idx].hp - damage > -15)
+                mv_objects.vec[collision_idx].hp -= damage + 1;
+            else attack_interval = 5; //>wait 5 ticks
             return damage + 1;
         }
         const Moving_object ally(-damage, spawn_index, -1);
         mv_objects.vec.emplace_back(ally);
-        mv_objects.alies_count++;
+        mv_objects.allies_count++;
         return damage;
     }
     attack_interval--;

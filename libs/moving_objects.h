@@ -20,5 +20,5 @@ public:
     std::vector<Moving_object> vec;
     size_t update(size_t count, size_t road_end_idx);
     size_t enemies_left = 0;
-    size_t alies_count = 0;
+    size_t allies_count = 0;
 };

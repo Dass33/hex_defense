@@ -49,6 +49,7 @@ private:
     bool fast_forwarding = false;
     int difficulty;
     int game_mode;
+    bool paused = false;
     void game_won();
     void game_lost();
     [[nodiscard]] size_t from_hex(char c) const;

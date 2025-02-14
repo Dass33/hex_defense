@@ -20,31 +20,38 @@ struct Player_state {
     attr_t attributes;
 };
 
+void pause_game(Win_data* win_data, bool &paused) {
+            nodelay(win_data->win, false);
+            const char pause_str[] = "PAUSED";
+            const int x_start = win_data->width/2 -sizeof pause_str;
+            wattron(win_data->win, A_REVERSE | A_BOLD);
+            mvwprintw(win_data->win, win_data->height / 2, x_start,"%s", pause_str);
+            wattroff(win_data->win, A_REVERSE | A_BOLD);
+            wrefresh(win_data->win);
+            wgetch(win_data->win);
+            nodelay(win_data->win, true);
+            paused = !paused;
+}
+
 void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_state& player) {
     switch (player.mode) {
         case basic: break;
         case anti_hex:
-            if (game_state.money < ANTI_HEX.cost) {
-                //todo
-            } else {
+            if (game_state.money >= ANTI_HEX.cost) {
                 Turrets* anti_hex = new Anti_hex(pos, level.road);
                 game_state.turrets.push_back(anti_hex);
                 game_state.money -= ANTI_HEX.cost;
             }
             break;
         case fire_wall:
-            if (game_state.money < FIRE_WALL.cost) {
-                //todo
-            } else {
+            if (game_state.money < FIRE_WALL.cost){
                 Turrets* fire_wall = new FireWall(pos);
                 game_state.turrets.push_back(fire_wall);
                 game_state.money -= FIRE_WALL.cost;
             }
             break;
         case blue_teamer:
-            if (game_state.money < BLUE_TEAMER.cost) {
-                //todo
-            } else {
+            if (game_state.money < BLUE_TEAMER.cost){
                 Turrets* blue_teamer = new Blue_teamer(pos, level.road);
                 game_state.turrets.push_back(blue_teamer);
                 game_state.money -= BLUE_TEAMER.cost;
@@ -100,6 +107,8 @@ bool player_actions(Coordinates& pos, WINDOW* win, Level& level,
         case 'f':
             game_state.change_speed();
             break;
+        case 'p': game_state.paused = !game_state.paused;
+            break;
         case 10: //> 10 == KEY_ENTER
             if (!level.clear_n_tiles(pos, TOWERS_SIZE)
                 || game_state.turret_collides(pos)) break;
@@ -140,7 +149,7 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
         if (now -last_enemy_move > enemy_interval * game_state.tick_length) {
             last_enemy_move = now;
             if (curr_enemies < max_enemies) curr_enemies++;
-            const size_t curr_objects = curr_enemies + game_state.mv_objects.alies_count;
+            const size_t curr_objects = curr_enemies + game_state.mv_objects.allies_count;
             game_state.curr_hp -= game_state.mv_objects.update(curr_objects, level.road.size() -1);
             if (game_state.curr_hp < 1) {
                 mvprintw(2, 0, "hp: %03d", game_state.curr_hp);
@@ -157,6 +166,7 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
 
         refresh();
         wrefresh(win_data.win);
+        if (game_state.paused) pause_game(&win_data, game_state.paused);
         //> Sleep to reduce the load on CPU
         std::this_thread::sleep_for(std::chrono::milliseconds(game_state.tick_length));
     }
@@ -167,10 +177,12 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
 void round_preparation(Coordinates& pos, Win_data& win_data, Level& level, Game_state& game_state) {
     nodelay(win_data.win, false);
     Player_state player = {PLAYER_ICON, basic, BASE_PLAYR_COLOR};
+    mvprintw(win_data.y_start-1, win_data.x_start+1, "Press 's' to start new round");
     do {
         mvprintw(1, 0, "Enemies left: %02ld", game_state.mv_objects.enemies_left);
         mvprintw(2, 0, "hp: %03d", game_state.curr_hp);
         mvprintw(3, 0, "$ %5ld ", game_state.money);
+        mvprintw(1, getmaxx(stdscr) - 10, "Speed: %dx", game_state.fast_forwarding + 1);
         level.print_level(win_data.win);
 
         for (auto& turret : game_state.turrets) turret->print(win_data.win);
@@ -182,6 +194,7 @@ void round_preparation(Coordinates& pos, Win_data& win_data, Level& level, Game_
         refresh();
         wrefresh(win_data.win);
     } while (player_actions(pos, win_data.win, level, player, game_state));
+    mvprintw(win_data.y_start-1, win_data.x_start+1, "                            ");
 }
 
 void game_over_screen(size_t death_round, size_t final_round) {
@@ -191,8 +204,8 @@ void game_over_screen(size_t death_round, size_t final_round) {
 
     int yMax,xMax;
     getmaxyx(stdscr, yMax, xMax);
-    int win_y_start = yMax/2 -end_win.height /2;
-    int win_x_start = xMax/2-end_win.width/2;
+    const int win_y_start = yMax/2 -end_win.height /2;
+    const int win_x_start = xMax/2-end_win.width/2;
     end_win.win = newwin(end_win.height, end_win.width, win_y_start, win_x_start);
 
     box(end_win.win,0,0);
@@ -262,7 +275,7 @@ void game_loop(Level& level, Game_state& game_state) {
 
     std::ifstream rounds_file(ROUNDS_PATH);
 
-    Win_data win_data = {play_win, level.winHeight, level.winWidth};
+    Win_data win_data = {play_win, level.winHeight, level.winWidth, win_x_start, win_y_start};
     
     for (;curr_round < rounds_count ;curr_round++) {
         round_preparation(pos, win_data, level, game_state);

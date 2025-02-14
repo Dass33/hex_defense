@@ -6,4 +6,6 @@ struct Win_data{
     WINDOW* win;
     size_t height;
     size_t width;
+    int x_start;
+    int y_start;
 };
