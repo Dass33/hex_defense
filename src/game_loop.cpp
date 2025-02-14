@@ -5,13 +5,14 @@
 #include "../libs/win_data.h"
 #include <chrono>
 #include <cstddef>
-#include <fstream>
 #include <ncurses.h>
-#include <string>
 #include <thread>
 
 #define curr_round game_state.curr_round
 #define rounds_count game_state.rounds_count
+static constexpr attr_t BASE_PLAYR_COLOR = COLOR_PAIR(3);
+static constexpr attr_t RED = COLOR_PAIR(1);
+static constexpr attr_t GREEN = COLOR_PAIR(4);
 
 struct Player_state {
     std::string icon;
@@ -23,30 +24,30 @@ void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_
     switch (player.mode) {
         case basic: break;
         case anti_hex:
-            if (game_state.money < ANTI_HEX_COST) {
+            if (game_state.money < ANTI_HEX.cost) {
                 //todo
             } else {
                 Turrets* anti_hex = new Anti_hex(pos, level.road);
                 game_state.turrets.push_back(anti_hex);
-                game_state.money -= ANTI_HEX_COST;
+                game_state.money -= ANTI_HEX.cost;
             }
             break;
         case fire_wall:
-            if (game_state.money < FIRE_WALL_COST) {
+            if (game_state.money < FIRE_WALL.cost) {
                 //todo
             } else {
                 Turrets* fire_wall = new FireWall(pos);
                 game_state.turrets.push_back(fire_wall);
-                game_state.money -= FIRE_WALL_COST;
+                game_state.money -= FIRE_WALL.cost;
             }
             break;
         case blue_teamer:
-            if (game_state.money < BLUE_TEAMER_COST) {
+            if (game_state.money < BLUE_TEAMER.cost) {
                 //todo
             } else {
                 Turrets* blue_teamer = new Blue_teamer(pos, level.road);
                 game_state.turrets.push_back(blue_teamer);
-                game_state.money -= BLUE_TEAMER_COST;
+                game_state.money -= BLUE_TEAMER.cost;
             }
             break;
     }
@@ -96,17 +97,21 @@ bool player_actions(Coordinates& pos, WINDOW* win, Level& level,
             player.mode = blue_teamer;
         break;
         case 's': return false;
-        //> 10 == KEY_ENTER
-        case 10:
+        case 'f':
+            game_state.change_speed();
+            break;
+        case 10: //> 10 == KEY_ENTER
             if (!level.clear_n_tiles(pos, TOWERS_SIZE)
                 || game_state.turret_collides(pos)) break;
             place_tower(level, pos, game_state, player);
         default: break;
     }
-    if (player.mode != basic && (!level.clear_n_tiles(pos, TOWERS_SIZE)
-        || game_state.turret_collides(pos))) {
-        player.attributes = COLOR_PAIR(1);
-    } else player.attributes = 0;
+    if (game_state.not_enough_money(player.mode)
+        || (player.mode != basic && (!level.clear_n_tiles(pos, TOWERS_SIZE)
+        || game_state.turret_collides(pos)))) {
+        player.attributes = RED;
+    } else if (player.mode == basic) player.attributes = BASE_PLAYR_COLOR;
+    else player.attributes = GREEN;
     return true;
 }
 
@@ -114,10 +119,7 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
     nodelay(win_data.win, true);
     size_t max_enemies = game_state.mv_objects.vec.size();
     size_t curr_enemies = 0;
-    Player_state player;
-    player.mode = basic;
-    player.attributes = 0;
-    player.icon = PLAYER_ICON;
+    Player_state player = {PLAYER_ICON, basic, BASE_PLAYR_COLOR};
 
     auto last_enemy_move = std::chrono::steady_clock::now();
     std::chrono::duration<double>enemy_interval(ENEMY_INTERVAL);
@@ -125,8 +127,9 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
         player_actions(pos, win_data.win, level, player, game_state);
         level.print_level(win_data.win);
         mvprintw(1, 0, "Enemies left: %02ld", game_state.mv_objects.enemies_left);
-        mvprintw(2, 0, "hp: %03ld", game_state.curr_hp);
+        mvprintw(2, 0, "hp: %03d", game_state.curr_hp);
         mvprintw(3, 0, "$ %5ld ", game_state.money);
+        mvprintw(1, level.xMax - 10, "Speed: %dx", game_state.fast_forwarding + 1);
 
         for (auto& turret : game_state.turrets) {
             game_state.money += turret->attack(game_state.mv_objects);
@@ -134,11 +137,17 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
         }
 
         auto now = std::chrono::steady_clock::now();
-        if (now -last_enemy_move > enemy_interval) {
+        if (now -last_enemy_move > enemy_interval * game_state.tick_length) {
             last_enemy_move = now;
             if (curr_enemies < max_enemies) curr_enemies++;
             const size_t curr_objects = curr_enemies + game_state.mv_objects.alies_count;
             game_state.curr_hp -= game_state.mv_objects.update(curr_objects, level.road.size() -1);
+            if (game_state.curr_hp < 1) {
+                mvprintw(2, 0, "hp: %03d", game_state.curr_hp);
+                refresh();
+                wrefresh(win_data.win);
+                break;
+            }
         }
         game_state.print_road(win_data.win, level.road);
         wattron(win_data.win, player.attributes);
@@ -149,7 +158,7 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
         refresh();
         wrefresh(win_data.win);
         //> Sleep to reduce the load on CPU
-        std::this_thread::sleep_for(std::chrono::milliseconds(TICK_LENGTH_MS));
+        std::this_thread::sleep_for(std::chrono::milliseconds(game_state.tick_length));
     }
     nodelay(win_data.win, false);
 }
@@ -157,10 +166,10 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
 
 void round_preparation(Coordinates& pos, Win_data& win_data, Level& level, Game_state& game_state) {
     nodelay(win_data.win, false);
-    Player_state player = {PLAYER_ICON, basic, 0};
+    Player_state player = {PLAYER_ICON, basic, BASE_PLAYR_COLOR};
     do {
         mvprintw(1, 0, "Enemies left: %02ld", game_state.mv_objects.enemies_left);
-        mvprintw(2, 0, "hp: %03ld", game_state.curr_hp);
+        mvprintw(2, 0, "hp: %03d", game_state.curr_hp);
         mvprintw(3, 0, "$ %5ld ", game_state.money);
         level.print_level(win_data.win);
 
@@ -173,6 +182,59 @@ void round_preparation(Coordinates& pos, Win_data& win_data, Level& level, Game_
         refresh();
         wrefresh(win_data.win);
     } while (player_actions(pos, win_data.win, level, player, game_state));
+}
+
+void game_over_screen(size_t death_round, size_t final_round) {
+    Win_data end_win;
+    end_win.height = 12;
+    end_win.width = 54;
+
+    int yMax,xMax;
+    getmaxyx(stdscr, yMax, xMax);
+    int win_y_start = yMax/2 -end_win.height /2;
+    int win_x_start = xMax/2-end_win.width/2;
+    end_win.win = newwin(end_win.height, end_win.width, win_y_start, win_x_start);
+
+    box(end_win.win,0,0);
+    int xStart = 1;
+    int yStart = 1;
+    mvwprintw(end_win.win,yStart, xStart, "%s", " _____                         _____");
+    mvwprintw(end_win.win,yStart+1, xStart, "%s", "|  __ \\                       |  _  |");
+    mvwprintw(end_win.win,yStart+2, xStart, "%s", "| |  \\/ __ _ _ __ ___   ___   | | | |_   _____ _ __ ");
+    mvwprintw(end_win.win,yStart+3, xStart, "%s", "| | __ / _` | '_ ` _ \\ / _ \\  | | | \\ \\ / / _ \\ '__|");
+    mvwprintw(end_win.win,yStart+4, xStart, "%s", "| |_\\ \\ (_| | | | | | |  __/  \\ \\_/ /\\ V /  __/ |");
+    mvwprintw(end_win.win,yStart+5,xStart, "%s", " \\____/\\__,_|_| |_| |_|\\___|   \\___/  \\_/ \\___|_|");
+    mvwprintw(end_win.win,yStart+7,xStart, "                       %ld / %ld", death_round, final_round);
+    wattron(end_win.win,A_BLINK);
+    mvwprintw(end_win.win,yStart+8,xStart, "            Press any button to continue");
+    wattroff(end_win.win,A_BLINK);
+    wrefresh(end_win.win);
+}
+
+void win_screen() {
+    Win_data end_win;
+    end_win.height = 12;
+    end_win.width = 54;
+
+    int yMax,xMax;
+    getmaxyx(stdscr, yMax, xMax);
+    int win_y_start = yMax/2 -end_win.height /2;
+    int win_x_start = xMax/2-end_win.width/2;
+    end_win.win = newwin(end_win.height, end_win.width, win_y_start, win_x_start);
+
+    box(end_win.win,0,0);
+    int xStart = 5;
+    int yStart = 2;
+    mvwprintw(end_win.win,yStart, xStart, "%s", "__   __             _    _               _ ");
+    mvwprintw(end_win.win,yStart+1, xStart, "%s", "\\ \\ / /            | |  | |             | |");
+    mvwprintw(end_win.win,yStart+2, xStart, "%s", " \\ V /___  _   _   | |  | | ___  _ __   | |");
+    mvwprintw(end_win.win,yStart+3, xStart, "%s", "  \\ // _ \\| | | |  | |/\\| |/ _ \\| '_ \\  | |");
+    mvwprintw(end_win.win,yStart+4, xStart, "%s", "  | | (_) | |_| |  \\  /\\  / (_) | | | | |_|");
+    mvwprintw(end_win.win,yStart+5,xStart, "%s", "  \\_/\\___/ \\__,_|   \\/  \\/ \\___/|_| |_| (_)");
+    wattron(end_win.win,A_BLINK);
+    mvwprintw(end_win.win,yStart+6,xStart, "         Press any button to continue");
+    wattroff(end_win.win,A_BLINK);
+    wrefresh(end_win.win);
 }
 
 void init_color_pairs() {
@@ -196,7 +258,6 @@ void game_loop(Level& level, Game_state& game_state) {
     mvprintw(0, 0, "Round:  0");
     refresh();
     level.print_level(play_win);
-    mvwprintw(play_win,1,1, PLAYER_ICON);
     wrefresh(play_win);
 
     std::ifstream rounds_file(ROUNDS_PATH);
@@ -209,10 +270,15 @@ void game_loop(Level& level, Game_state& game_state) {
         game_state.load_next_round(rounds_file);
         for (auto& turret :game_state.turrets) turret->round_reset();
         round_loop(win_data, level, game_state, pos);
+        if (game_state.curr_hp < 1) {
+            game_over_screen(curr_round, rounds_count);
+            break;
+        }
         game_state.mv_objects.vec.clear();
         game_state.money += ROUND_BONUS;
     }
-
+    if (game_state.curr_hp > 0) win_screen();
+    wgetch(stdscr);
     rounds_file.close();
 
     wclear(play_win);

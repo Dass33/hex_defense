@@ -11,7 +11,7 @@
 static constexpr size_t BASE_HEALTH = 100;
 static constexpr size_t BASE_ROUNDS = 5;
 constexpr size_t TICK_LENGTH_MS = 10;
-constexpr double ENEMY_INTERVAL = 0.04 * TICK_LENGTH_MS;
+constexpr double ENEMY_INTERVAL = 0.04;
 constexpr char DIFFICULTIES[][10] = {"Easy","Medium","Hard"};
 constexpr char ROUNDS_PATH[] = "./assets/rounds";
 constexpr size_t STARTING_MONEY = 240;
@@ -30,6 +30,8 @@ public:
     bool validate_rounds() const;
     void print_road(WINDOW* win, std::vector<Coordinates>road) const;
     bool turret_collides(Coordinates& pos);
+    void change_speed();
+    bool not_enough_money(const Player_modes mode) const;
     friend void game_loop(Level& level, Game_state& init_game_state);
     friend void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordinates& pos);
     friend bool player_actions(Coordinates& pos, WINDOW* win, Level& level,
@@ -41,8 +43,10 @@ private:
     std::vector<Turrets*> turrets;
     size_t curr_round = 0;
     size_t rounds_count;
-    size_t curr_hp;
+    int curr_hp;
     size_t money;
+    size_t tick_length = TICK_LENGTH_MS;
+    bool fast_forwarding = false;
     int difficulty;
     int game_mode;
     void game_won();

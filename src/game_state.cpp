@@ -1,6 +1,7 @@
 #include "../libs/game_state.h"
 #include "../libs/level.h"
 #include "../libs/coordinates.h"
+#include "../libs/turrets.h"
 #include <cctype>
 #include <cstddef>
 #include <cstdio>
@@ -102,6 +103,17 @@ bool Game_state::turret_collides(Coordinates& pos) {
             if (turret->get_pos().x == pos.x + i) return true;
         }
     }
+    return false;
+}
+
+void Game_state::change_speed() {
+    fast_forwarding = !fast_forwarding;
+    tick_length = fast_forwarding ? TICK_LENGTH_MS /2 : TICK_LENGTH_MS;
+}
+
+
+bool Game_state::not_enough_money(const Player_modes mode) const {
+    if (money < BASE_TOWERS[mode-1].cost) return true;
     return false;
 }
 
