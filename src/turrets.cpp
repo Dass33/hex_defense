@@ -57,8 +57,10 @@ size_t FireWall::attack(Mv_objects &enemies) {
     return 0;
 }
 
-void FireWall::upgrade() {}
-
+bool FireWall::upgrade(Coordinates &pos, size_t &money) {
+    //todo
+    return false;
+}
 void FireWall::print(WINDOW* win) const {
     if (attack_interval < FIRE_WALL.attack_interval / 3
         && attack_interval > FIRE_WALL.attack_interval / 5 && is_attacking) {
@@ -73,6 +75,11 @@ void FireWall::print(WINDOW* win) const {
     mvwprintw(win, pos.y, pos.x, "%c", TOWERS_ICONS[1][1]);
     wattroff(win, COLOR_PAIR(2));
 }
+
+size_t FireWall::get_sell_value() const {
+    return (FIRE_WALL.cost + tier * upgrade_cost) * SELL_RECUPERATION;
+}
+
 
 Blue_teamer::Blue_teamer(Coordinates pos, const std::vector<Coordinates>& road) :Turrets(pos){
     for (long i = road.size() -1; i >= 0; i--) {
@@ -114,7 +121,10 @@ size_t Blue_teamer::attack(Mv_objects &enemies) {
     return 0;
 }
 
-void Blue_teamer::upgrade() {}
+bool Blue_teamer::upgrade(Coordinates &pos, size_t &money) {
+    //todo
+    return false;
+}
 
 void Blue_teamer::print(WINDOW* win) const {
     if (attack_interval < BLUE_TEAMER.attack_interval / 2
@@ -135,6 +145,10 @@ void Blue_teamer::round_reset() {
     attack_idx = 0;
     is_attacking = false;
     attack_interval = BLUE_TEAMER.attack_interval;
+}
+
+size_t Blue_teamer::get_sell_value() const {
+    return (FIRE_WALL.cost + tier * upgrade_cost) * SELL_RECUPERATION;
 }
 
 Anti_hex::Anti_hex(Coordinates pos, const std::vector<Coordinates>& road) :Turrets(pos){ 
@@ -173,7 +187,10 @@ size_t Anti_hex::attack(Mv_objects &mv_objects) {
     return 0;
 }
 
-void Anti_hex::upgrade() {}
+bool Anti_hex::upgrade(Coordinates &pos, size_t &money) {
+    //todo
+    return false;
+}
 
 void Anti_hex::print(WINDOW* win) const {
     if (attack_interval *1.3 < ANTI_HEX.attack_interval
@@ -193,3 +210,8 @@ void Anti_hex::print(WINDOW* win) const {
     mvwprintw(win, pos.y, pos.x + 1, "%c", TOWERS_ICONS[0][2]);
     wattroff(win, COLOR_PAIR(2));
 }
+
+size_t Anti_hex::get_sell_value() const {
+    return (FIRE_WALL.cost + tier * upgrade_cost) * SELL_RECUPERATION;
+}
+

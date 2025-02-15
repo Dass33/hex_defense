@@ -8,6 +8,7 @@
 
 constexpr char TOWERS_ICONS[][4] = {"!0x","/^\\",">@<"};
 constexpr int TOWERS_SIZE = sizeof TOWERS_ICONS[0] / sizeof(char) -1;
+constexpr double SELL_RECUPERATION = 0.6;
 
 struct Base_tower {
     constexpr Base_tower(size_t c, size_t i, size_t r)
@@ -26,10 +27,10 @@ class Turrets {
 public:
     explicit Turrets(Coordinates pos);
     virtual ~Turrets() = default;
-    size_t get_cost();
-    virtual void upgrade() = 0;
     virtual size_t attack(Mv_objects &enemies) = 0;
     virtual void print(WINDOW* win) const = 0;
+    virtual bool upgrade(Coordinates& pos, size_t& money) = 0;
+    [[nodiscard]] virtual size_t get_sell_value() const = 0;
     Coordinates get_pos();
     void round_reset() {};
     static void print_range(Win_data win_data, const Coordinates& pos, size_t mode);
@@ -49,8 +50,9 @@ public:
     FireWall(Coordinates pos);
     ~FireWall() {};
     size_t attack(Mv_objects &enemies) override;
-    void upgrade() override;
     void print(WINDOW* win) const override;
+    bool upgrade(Coordinates& pos, size_t& money) override;
+    size_t get_sell_value() const override;
 private:
     int damage = 1;
 };
@@ -60,8 +62,9 @@ public:
     Blue_teamer(Coordinates pos, const std::vector<Coordinates>& road);
     ~Blue_teamer() {};
     size_t attack(Mv_objects &enemies) override;
-    void upgrade() override;
     void print(WINDOW* win) const override;
+    bool upgrade(Coordinates& pos, size_t& money) override;
+    size_t get_sell_value() const override;
     void round_reset();
 private:
     int damage = 1;
@@ -77,10 +80,11 @@ public:
     Anti_hex(Coordinates pos, const std::vector<Coordinates>& road);
     ~Anti_hex() {};
     size_t attack(Mv_objects &mv_objects) override;
-    void upgrade() override;
     void print(WINDOW* win) const override;
-    int damage = 1;
+    bool upgrade(Coordinates& pos, size_t& money) override;
+    size_t get_sell_value() const override;
 private:
+    int damage = 1;
     long spawn_index = -1;
     [[nodiscard]] long spawn_collision(const Mv_objects &mv_objects) const;
 };

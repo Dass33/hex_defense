@@ -29,12 +29,13 @@ public:
     bool save_state() const;
     bool validate_rounds() const;
     void print_road(WINDOW* win, std::vector<Coordinates>road) const;
-    bool turret_collides(Coordinates& pos);
+    Turrets** turret_collides(Coordinates& pos, bool isPlayer);
+    size_t sell_turret(Turrets** turret);
     void change_speed();
     bool not_enough_money(const Player_modes mode) const;
     friend void game_loop(Level& level, Game_state& init_game_state);
     friend void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordinates& pos);
-    friend bool player_actions(Coordinates& pos, WINDOW* win, Level& level,
+    friend bool player_actions(Coordinates& pos, Win_data& win_data, Level& level,
                                Player_state& player, Game_state& game_state);
     friend void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_state& player);
     friend void round_preparation(Coordinates& pos, Win_data& win_data, Level& level, Game_state& game_state);

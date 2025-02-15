@@ -10,9 +10,12 @@
 
 #define curr_round game_state.curr_round
 #define rounds_count game_state.rounds_count
-static constexpr attr_t BASE_PLAYR_COLOR = COLOR_PAIR(3);
 static constexpr attr_t RED = COLOR_PAIR(1);
-static constexpr attr_t GREEN = COLOR_PAIR(4);
+static constexpr attr_t GREEN = COLOR_PAIR(2);
+static constexpr attr_t YELLOW = COLOR_PAIR(3);
+static constexpr attr_t BLUE = COLOR_PAIR(4);
+static constexpr attr_t MAGENTA = COLOR_PAIR(5);
+static constexpr attr_t BASE_PLAYR_COLOR = BLUE;
 
 struct Player_state {
     std::string icon;
@@ -44,14 +47,14 @@ void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_
             }
             break;
         case fire_wall:
-            if (game_state.money < FIRE_WALL.cost){
+            if (game_state.money >= FIRE_WALL.cost){
                 Turrets* fire_wall = new FireWall(pos);
                 game_state.turrets.push_back(fire_wall);
                 game_state.money -= FIRE_WALL.cost;
             }
             break;
         case blue_teamer:
-            if (game_state.money < BLUE_TEAMER.cost){
+            if (game_state.money >= BLUE_TEAMER.cost){
                 Turrets* blue_teamer = new Blue_teamer(pos, level.road);
                 game_state.turrets.push_back(blue_teamer);
                 game_state.money -= BLUE_TEAMER.cost;
@@ -60,9 +63,10 @@ void place_tower(Level& level, Coordinates& pos, Game_state& game_state, Player_
     }
 }
 
-bool player_actions(Coordinates& pos, WINDOW* win, Level& level,
+bool player_actions(Coordinates& pos, Win_data& win_data, Level& level,
                     Player_state& player, Game_state& game_state) {
-    int input = wgetch(win);
+    int input = wgetch(win_data.win);
+    Turrets** turret_under_player = game_state.turret_collides(pos, true);
 
     switch (input) {
         case ERR: return true;
@@ -107,20 +111,41 @@ bool player_actions(Coordinates& pos, WINDOW* win, Level& level,
         case 'f':
             game_state.change_speed();
             break;
+        case 'd': if (player.mode != basic || !turret_under_player) break;
+            game_state.money += game_state.sell_turret(turret_under_player);
+            break;
+        case 'u': if (player.mode != basic || !turret_under_player) break;
+            if (!(*turret_under_player)->upgrade(pos, game_state.money)) {
+                player.attributes = RED;
+                return true;
+            }
+            break;
         case 'p': game_state.paused = !game_state.paused;
             break;
         case 10: //> 10 == KEY_ENTER
             if (!level.clear_n_tiles(pos, TOWERS_SIZE)
-                || game_state.turret_collides(pos)) break;
+                || game_state.turret_collides(pos, false)) break;
             place_tower(level, pos, game_state, player);
         default: break;
     }
+    const char upgrade_str[] = "Press 'u' to upgrade: 90$";
+    const char sell_str[] = "|| 'd' to sell: 20$";
+    const int x_pos = win_data.x_start + win_data.width - sizeof upgrade_str;
+    mvprintw(win_data.y_start - 1, x_pos, "                         ");
+    mvprintw(win_data.y_start - 2, x_pos, "                         ");
+
     if (game_state.not_enough_money(player.mode)
         || (player.mode != basic && (!level.clear_n_tiles(pos, TOWERS_SIZE)
-        || game_state.turret_collides(pos)))) {
+        || game_state.turret_collides(pos, false)))) {
         player.attributes = RED;
-    } else if (player.mode == basic) player.attributes = BASE_PLAYR_COLOR;
-    else player.attributes = GREEN;
+    }
+    else if (player.mode != basic) player.attributes = GREEN;
+    else if (game_state.turret_collides(pos, true)) {
+        mvprintw(win_data.y_start - 2, x_pos, "%s", upgrade_str);
+        mvprintw(win_data.y_start - 1, x_pos, "%s", sell_str);
+        player.attributes = YELLOW;
+    }
+    else player.attributes = BASE_PLAYR_COLOR;
     return true;
 }
 
@@ -133,7 +158,7 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
     auto last_enemy_move = std::chrono::steady_clock::now();
     std::chrono::duration<double>enemy_interval(ENEMY_INTERVAL);
     while (game_state.mv_objects.enemies_left) {
-        player_actions(pos, win_data.win, level, player, game_state);
+        player_actions(pos, win_data, level, player, game_state);
         level.print_level(win_data.win);
         mvprintw(1, 0, "Enemies left: %02ld", game_state.mv_objects.enemies_left);
         mvprintw(2, 0, "hp: %03d", game_state.curr_hp);
@@ -193,7 +218,7 @@ void round_preparation(Coordinates& pos, Win_data& win_data, Level& level, Game_
         wattroff(win_data.win, player.attributes);
         refresh();
         wrefresh(win_data.win);
-    } while (player_actions(pos, win_data.win, level, player, game_state));
+    } while (player_actions(pos, win_data, level, player, game_state));
     mvprintw(win_data.y_start-1, win_data.x_start+1, "                            ");
 }
 
@@ -251,10 +276,11 @@ void win_screen() {
 }
 
 void init_color_pairs() {
-    init_pair(2, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(3, COLOR_BLUE, COLOR_BLACK);
-    init_pair(4, COLOR_GREEN, COLOR_BLACK);
-    init_pair(5, COLOR_CYAN, COLOR_BLACK);
+    init_pair(2, COLOR_GREEN, COLOR_BLACK);
+    init_pair(3, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(4, COLOR_BLUE, COLOR_BLACK);
+    init_pair(5, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(6, COLOR_CYAN, COLOR_BLACK);
 }
 
 void game_loop(Level& level, Game_state& game_state) {

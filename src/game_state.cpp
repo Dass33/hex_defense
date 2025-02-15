@@ -96,14 +96,20 @@ void Game_state::print_road(WINDOW* win, std::vector<Coordinates> road) const {
     }
 }
 
-bool Game_state::turret_collides(Coordinates& pos) {
+Turrets** Game_state::turret_collides(Coordinates& pos, bool isPlayer) {
     for (auto& turret : turrets) {
         if (turret->get_pos().y != pos.y) continue;
-        for (int i = -1; i <= TOWERS_SIZE;i++) {
-            if (turret->get_pos().x == pos.x + i) return true;
+        for (int i = -1; i <= TOWERS_SIZE - 2*isPlayer;i++) {
+            if (turret->get_pos().x == pos.x + i) return &turret;
         }
     }
-    return false;
+    return nullptr;
+}
+
+size_t Game_state::sell_turret(Turrets** turret) {
+    const size_t sold_for = (*turret)->get_sell_value();
+    turrets.erase(turrets.begin() + (turret - &turrets[0]));
+    return sold_for;
 }
 
 void Game_state::change_speed() {
