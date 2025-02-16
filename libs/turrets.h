@@ -3,6 +3,7 @@
 #include <ncurses.h>
 #include <vector>
 #include "coordinates.h"
+#include "level.h"
 #include "moving_objects.h"
 #include "win_data.h"
 
@@ -18,9 +19,9 @@ struct Base_tower {
     size_t range;
 };
 
-constexpr Base_tower FIRE_WALL(70, 300, 1);
+constexpr Base_tower FIRE_WALL(80, 280, 1);
 constexpr Base_tower BLUE_TEAMER(60, 100, 4);
-constexpr Base_tower ANTI_HEX(100,200,2);
+constexpr Base_tower ANTI_HEX(200,200,2);
 constexpr Base_tower BASE_TOWERS[] = {BLUE_TEAMER, FIRE_WALL, ANTI_HEX};
 
 class Turrets {
@@ -29,7 +30,7 @@ public:
     virtual ~Turrets() = default;
     virtual size_t attack(Mv_objects &enemies) = 0;
     virtual void print(WINDOW* win) const = 0;
-    virtual bool upgrade(Coordinates& pos, size_t& money) = 0;
+    virtual bool upgrade(Coordinates& pos, size_t& money, const std::vector<Coordinates>&road) = 0;
     [[nodiscard]] virtual size_t get_sell_value() const = 0;
     Coordinates get_pos();
     void round_reset() {};
@@ -51,10 +52,11 @@ public:
     ~FireWall() {};
     size_t attack(Mv_objects &enemies) override;
     void print(WINDOW* win) const override;
-    bool upgrade(Coordinates& pos, size_t& money) override;
+    bool upgrade(Coordinates& pos, size_t& mone, const std::vector<Coordinates>&road) override;
     size_t get_sell_value() const override;
 private:
     int damage = 1;
+    size_t upgrade_cost = FIRE_WALL.cost /2;
 };
 
 class Blue_teamer : public Turrets {
@@ -63,7 +65,8 @@ public:
     ~Blue_teamer() {};
     size_t attack(Mv_objects &enemies) override;
     void print(WINDOW* win) const override;
-    bool upgrade(Coordinates& pos, size_t& money) override;
+    bool upgrade(Coordinates& pos, size_t& mone,
+        const std::vector<Coordinates>&road) override;
     size_t get_sell_value() const override;
     void round_reset();
 private:
@@ -73,6 +76,7 @@ private:
     size_t range = BLUE_TEAMER.range;
     size_t find_enemy(Mv_objects& enemies);
     std::vector<size_t>road_in_range;
+    size_t upgrade_cost = BLUE_TEAMER.cost /2;
 };
 
 class Anti_hex : public Turrets {
@@ -81,10 +85,11 @@ public:
     ~Anti_hex() {};
     size_t attack(Mv_objects &mv_objects) override;
     void print(WINDOW* win) const override;
-    bool upgrade(Coordinates& pos, size_t& money) override;
+    bool upgrade(Coordinates& pos, size_t& mone, const std::vector<Coordinates>&road) override;
     size_t get_sell_value() const override;
 private:
     int damage = 1;
     long spawn_index = -1;
     [[nodiscard]] long spawn_collision(const Mv_objects &mv_objects) const;
+    size_t upgrade_cost = ANTI_HEX.cost /2;
 };

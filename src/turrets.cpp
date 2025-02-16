@@ -57,9 +57,15 @@ size_t FireWall::attack(Mv_objects &enemies) {
     return 0;
 }
 
-bool FireWall::upgrade(Coordinates &pos, size_t &money) {
-    //todo
-    return false;
+bool FireWall::upgrade([[maybe_unused]] Coordinates &pos, size_t &money,
+                       [[maybe_unused]] const std::vector<Coordinates>&road) {
+    if (money < upgrade_cost * (tier+1)) return false;
+    money -= upgrade_cost * (tier+1);
+    tier++;
+    damage++;
+    attack_interval = attack_interval * 0.6 + 2;
+
+    return true;
 }
 void FireWall::print(WINDOW* win) const {
     if (attack_interval < FIRE_WALL.attack_interval / 3
@@ -121,9 +127,20 @@ size_t Blue_teamer::attack(Mv_objects &enemies) {
     return 0;
 }
 
-bool Blue_teamer::upgrade(Coordinates &pos, size_t &money) {
-    //todo
-    return false;
+bool Blue_teamer::upgrade(Coordinates &pos, size_t &money, const std::vector<Coordinates>&road) {
+    if (money < upgrade_cost * (tier+1)) return false;
+    money -= upgrade_cost * (tier+1);
+    tier++;
+    damage += (tier+1) % 2;
+    attack_interval = attack_interval * 0.5 + 2;
+    range += tier % 2;
+    if (tier % 2) {
+        road_in_range.clear();
+        for (long i = road.size() -1; i >= 0; i--) {
+            if (in_range(pos, road[i], range)) road_in_range.push_back(i);
+        }
+    }
+    return true;
 }
 
 void Blue_teamer::print(WINDOW* win) const {
@@ -187,9 +204,15 @@ size_t Anti_hex::attack(Mv_objects &mv_objects) {
     return 0;
 }
 
-bool Anti_hex::upgrade(Coordinates &pos, size_t &money) {
-    //todo
-    return false;
+bool Anti_hex::upgrade([[maybe_unused]] Coordinates &pos, size_t &money,
+                       [[maybe_unused]] const std::vector<Coordinates>&road) {
+    if (money < upgrade_cost * (tier+1)) return false;
+    money -= upgrade_cost * (tier+1);
+    tier++;
+    damage++;
+    attack_interval = attack_interval * 0.6 + 2;
+
+    return true;
 }
 
 void Anti_hex::print(WINDOW* win) const {

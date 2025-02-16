@@ -115,7 +115,7 @@ bool player_actions(Coordinates& pos, Win_data& win_data, Level& level,
             game_state.money += game_state.sell_turret(turret_under_player);
             break;
         case 'u': if (player.mode != basic || !turret_under_player) break;
-            if (!(*turret_under_player)->upgrade(pos, game_state.money)) {
+            if (!(*turret_under_player)->upgrade(pos, game_state.money, level.road)) {
                 player.attributes = RED;
                 return true;
             }
@@ -128,9 +128,11 @@ bool player_actions(Coordinates& pos, Win_data& win_data, Level& level,
             place_tower(level, pos, game_state, player);
         default: break;
     }
-    const char upgrade_str[] = "Press 'u' to upgrade: 90$";
-    const char sell_str[] = "|| 'd' to sell: 20$";
-    const int x_pos = win_data.x_start + win_data.width - sizeof upgrade_str;
+    turret_under_player = game_state.turret_collides(pos, true);
+
+    const char upgrade_str[] = "Press 'u' to upgrade.";
+    const char sell_str[] = "|| 'd' to sell:";
+    const int x_pos = win_data.x_start + win_data.width - sizeof upgrade_str - 3;
     mvprintw(win_data.y_start - 1, x_pos, "                         ");
     mvprintw(win_data.y_start - 2, x_pos, "                         ");
 
@@ -140,9 +142,9 @@ bool player_actions(Coordinates& pos, Win_data& win_data, Level& level,
         player.attributes = RED;
     }
     else if (player.mode != basic) player.attributes = GREEN;
-    else if (game_state.turret_collides(pos, true)) {
+    else if (turret_under_player) {
         mvprintw(win_data.y_start - 2, x_pos, "%s", upgrade_str);
-        mvprintw(win_data.y_start - 1, x_pos, "%s", sell_str);
+        mvprintw(win_data.y_start - 1, x_pos, "%s %2ld", sell_str, (*turret_under_player)->get_sell_value());
         player.attributes = YELLOW;
     }
     else player.attributes = BASE_PLAYR_COLOR;

@@ -74,6 +74,7 @@ int main() {
         std::cout << "\nTo small screen\n";
         std::cout << "min screen: " << X_MIN_SCREEN << "x"  << Y_MIN_SCREEN << std::endl;
         std::cout << "curr screen: " << xMax << "x"  << yMax << std::endl;
+        endwin();
         return 1;
     }
     //these constants should center the title
