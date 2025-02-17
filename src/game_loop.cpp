@@ -122,6 +122,8 @@ bool player_actions(Coordinates& pos, Win_data& win_data, Level& level,
             break;
         case 'p': game_state.paused = !game_state.paused;
             break;
+        case  'q': game_state.quit = true;
+            break;
         case 10: //> 10 == KEY_ENTER
             if (!level.clear_n_tiles(pos, TOWERS_SIZE)
                 || game_state.turret_collides(pos, false)) break;
@@ -159,7 +161,7 @@ void round_loop(Win_data& win_data,Level& level, Game_state& game_state, Coordin
 
     auto last_enemy_move = std::chrono::steady_clock::now();
     std::chrono::duration<double>enemy_interval(ENEMY_INTERVAL);
-    while (game_state.mv_objects.enemies_left) {
+    while (game_state.mv_objects.enemies_left && !game_state.quit) {
         player_actions(pos, win_data, level, player, game_state);
         level.print_level(win_data.win);
         mvprintw(1, 0, "Enemies left: %02ld", game_state.mv_objects.enemies_left);
@@ -206,6 +208,7 @@ void round_preparation(Coordinates& pos, Win_data& win_data, Level& level, Game_
     Player_state player = {PLAYER_ICON, basic, BASE_PLAYR_COLOR};
     mvprintw(win_data.y_start-1, win_data.x_start+1, "Press 's' to start new round");
     do {
+        if (game_state.quit) break;
         mvprintw(1, 0, "Enemies left: %02ld", game_state.mv_objects.enemies_left);
         mvprintw(2, 0, "hp: %03d", game_state.curr_hp);
         mvprintw(3, 0, "$ %5ld ", game_state.money);
@@ -307,21 +310,28 @@ void game_loop(Level& level, Game_state& game_state) {
     
     for (;curr_round < rounds_count ;curr_round++) {
         round_preparation(pos, win_data, level, game_state);
+        if (game_state.quit) break;
         mvprintw(0, 0, "Round: %2ld", curr_round);
         game_state.load_next_round(rounds_file);
         for (auto& turret :game_state.turrets) turret->round_reset();
         round_loop(win_data, level, game_state, pos);
+        if (game_state.quit) break;
         if (game_state.curr_hp < 1) {
             game_over_screen(curr_round, rounds_count);
+            wgetch(stdscr);
             break;
         }
         game_state.mv_objects.vec.clear();
         game_state.money += ROUND_BONUS;
     }
-    if (game_state.curr_hp > 0) win_screen();
-    wgetch(stdscr);
+    if (game_state.curr_hp > 0 && !game_state.quit) {
+        win_screen();
+        wgetch(stdscr);
+    }
     rounds_file.close();
 
     wclear(play_win);
     wrefresh(play_win);
+    clear();
+    refresh();
 }

@@ -48,6 +48,7 @@ private:
     size_t money;
     size_t tick_length = TICK_LENGTH_MS;
     bool fast_forwarding = false;
+    bool quit = false;
     int difficulty;
     int game_mode;
     bool paused = false;
