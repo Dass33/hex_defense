@@ -21,7 +21,7 @@ struct Base_tower {
 
 constexpr Base_tower FIRE_WALL(80, 280, 1);
 constexpr Base_tower BLUE_TEAMER(60, 100, 4);
-constexpr Base_tower ANTI_HEX(200,200,2);
+constexpr Base_tower ANTI_HEX(130,200,2);
 constexpr Base_tower BASE_TOWERS[] = {BLUE_TEAMER, FIRE_WALL, ANTI_HEX};
 
 class Turrets {
@@ -32,6 +32,7 @@ public:
     virtual void print(WINDOW* win) const = 0;
     virtual bool upgrade(Coordinates& pos, size_t& money, const std::vector<Coordinates>&road) = 0;
     [[nodiscard]] virtual size_t get_sell_value() const = 0;
+    [[nodiscard]] virtual size_t get_upgrade_cost() const = 0;
     Coordinates get_pos();
     void round_reset() {};
     static void print_range(Win_data win_data, const Coordinates& pos, size_t mode);
@@ -53,7 +54,8 @@ public:
     size_t attack(Mv_objects &enemies) override;
     void print(WINDOW* win) const override;
     bool upgrade(Coordinates& pos, size_t& mone, const std::vector<Coordinates>&road) override;
-    size_t get_sell_value() const override;
+    [[nodiscard]] size_t get_sell_value() const override;
+    [[nodiscard]] size_t get_upgrade_cost() const override;
 private:
     int damage = 1;
     size_t upgrade_cost = FIRE_WALL.cost /2;
@@ -67,7 +69,8 @@ public:
     void print(WINDOW* win) const override;
     bool upgrade(Coordinates& pos, size_t& mone,
         const std::vector<Coordinates>&road) override;
-    size_t get_sell_value() const override;
+    [[nodiscard]] size_t get_sell_value() const override;
+    [[nodiscard]] size_t get_upgrade_cost() const override;
     void round_reset();
 private:
     int damage = 1;
@@ -86,7 +89,8 @@ public:
     size_t attack(Mv_objects &mv_objects) override;
     void print(WINDOW* win) const override;
     bool upgrade(Coordinates& pos, size_t& mone, const std::vector<Coordinates>&road) override;
-    size_t get_sell_value() const override;
+    [[nodiscard]] size_t get_sell_value() const override;
+    [[nodiscard]] size_t get_upgrade_cost() const override;
 private:
     int damage = 1;
     long spawn_index = -1;

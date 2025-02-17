@@ -143,7 +143,7 @@ bool player_actions(Coordinates& pos, Win_data& win_data, Level& level,
     }
     else if (player.mode != basic) player.attributes = GREEN;
     else if (turret_under_player) {
-        mvprintw(win_data.y_start - 2, x_pos, "%s", upgrade_str);
+        mvprintw(win_data.y_start - 2, x_pos, "%s %2ld", upgrade_str, (*turret_under_player)->get_upgrade_cost());
         mvprintw(win_data.y_start - 1, x_pos, "%s %2ld", sell_str, (*turret_under_player)->get_sell_value());
         player.attributes = YELLOW;
     }

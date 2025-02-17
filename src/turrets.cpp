@@ -63,11 +63,13 @@ bool FireWall::upgrade([[maybe_unused]] Coordinates &pos, size_t &money,
     money -= upgrade_cost * (tier+1);
     tier++;
     damage++;
-    attack_interval = attack_interval * 0.6 + 2;
+    attack_interval = attack_interval * 0.5 + 2;
 
     return true;
 }
 void FireWall::print(WINDOW* win) const {
+    if (tier > 0) wattron(win, A_BOLD);
+
     if (attack_interval < FIRE_WALL.attack_interval / 3
         && attack_interval > FIRE_WALL.attack_interval / 5 && is_attacking) {
         wattron(win, COLOR_PAIR(5));
@@ -79,11 +81,15 @@ void FireWall::print(WINDOW* win) const {
         wattron(win, COLOR_PAIR(2));
     }
     mvwprintw(win, pos.y, pos.x, "%c", TOWERS_ICONS[1][1]);
-    wattroff(win, COLOR_PAIR(2));
+    wattroff(win, COLOR_PAIR(2) |  A_BOLD);
 }
 
 size_t FireWall::get_sell_value() const {
     return (FIRE_WALL.cost + tier * upgrade_cost) * SELL_RECUPERATION;
+}
+
+size_t FireWall::get_upgrade_cost() const {
+    return (tier+1) * upgrade_cost;
 }
 
 
@@ -110,9 +116,9 @@ size_t Blue_teamer::find_enemy(Mv_objects& enemies) {
 
 size_t Blue_teamer::attack(Mv_objects &enemies) {
     if (!attack_interval && !road_in_range.empty()) {
-        attack_interval = BLUE_TEAMER.attack_interval;
         const size_t res = find_enemy(enemies);
         if (res < enemies.vec.size()) {
+        attack_interval = BLUE_TEAMER.attack_interval;
             is_attacking = true;
             if (enemies.vec[res].hp <= damage) {
                 enemies.vec[res].hp = 0;
@@ -122,8 +128,7 @@ size_t Blue_teamer::attack(Mv_objects &enemies) {
             enemies.vec[res].hp -= damage;
             return damage;
         } is_attacking = false;
-    }
-    attack_interval--;
+    } else attack_interval--;
     return 0;
 }
 
@@ -131,8 +136,8 @@ bool Blue_teamer::upgrade(Coordinates &pos, size_t &money, const std::vector<Coo
     if (money < upgrade_cost * (tier+1)) return false;
     money -= upgrade_cost * (tier+1);
     tier++;
-    damage += (tier+1) % 2;
-    attack_interval = attack_interval * 0.5 + 2;
+    damage++;
+    attack_interval = attack_interval * 0.4 + 2;
     range += tier % 2;
     if (tier % 2) {
         road_in_range.clear();
@@ -144,6 +149,8 @@ bool Blue_teamer::upgrade(Coordinates &pos, size_t &money, const std::vector<Coo
 }
 
 void Blue_teamer::print(WINDOW* win) const {
+    if (tier > 0) wattron(win, A_BOLD);
+
     if (attack_interval < BLUE_TEAMER.attack_interval / 2
         && attack_interval > BLUE_TEAMER.attack_interval / 5 && is_attacking) {
         wattron(win, COLOR_PAIR(5));
@@ -155,7 +162,7 @@ void Blue_teamer::print(WINDOW* win) const {
         wattron(win, COLOR_PAIR(2));
     }
     mvwprintw(win, pos.y, pos.x, "%c", TOWERS_ICONS[2][1]);
-    wattroff(win, COLOR_PAIR(2));
+    wattroff(win, COLOR_PAIR(2) | A_BOLD);
 }
 
 void Blue_teamer::round_reset() {
@@ -166,6 +173,10 @@ void Blue_teamer::round_reset() {
 
 size_t Blue_teamer::get_sell_value() const {
     return (FIRE_WALL.cost + tier * upgrade_cost) * SELL_RECUPERATION;
+}
+
+size_t Blue_teamer::get_upgrade_cost() const {
+    return (tier+1) * upgrade_cost;
 }
 
 Anti_hex::Anti_hex(Coordinates pos, const std::vector<Coordinates>& road) :Turrets(pos){ 
@@ -216,6 +227,8 @@ bool Anti_hex::upgrade([[maybe_unused]] Coordinates &pos, size_t &money,
 }
 
 void Anti_hex::print(WINDOW* win) const {
+    if (tier > 0) wattron(win, A_BOLD);
+
     if (attack_interval *1.3 < ANTI_HEX.attack_interval
         && attack_interval > ANTI_HEX.attack_interval / 3 && is_attacking) {
         wattron(win, COLOR_PAIR(3));
@@ -231,10 +244,14 @@ void Anti_hex::print(WINDOW* win) const {
         wattron(win, COLOR_PAIR(2));
     }
     mvwprintw(win, pos.y, pos.x + 1, "%c", TOWERS_ICONS[0][2]);
-    wattroff(win, COLOR_PAIR(2));
+    wattroff(win, COLOR_PAIR(2) | A_BOLD);
 }
 
 size_t Anti_hex::get_sell_value() const {
     return (FIRE_WALL.cost + tier * upgrade_cost) * SELL_RECUPERATION;
+}
+
+size_t Anti_hex::get_upgrade_cost() const {
+    return (tier+1) * upgrade_cost;
 }
 
