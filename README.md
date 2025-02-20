@@ -29,6 +29,7 @@ You can choose the difficulty by pressng number from one to three (1-3).
 - 'd' while cursor is on tower sells it.
 - 's' starts new round.
 - 'f' changes speed of the game.
+- 'p' to pause the game.
 - 'q' quits the game.
 
 
